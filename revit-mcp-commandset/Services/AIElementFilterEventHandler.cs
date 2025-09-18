@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using RevitMCPCommandSet.Models.Geometry;
 
 namespace RevitMCPCommandSet.Services
 {
@@ -23,14 +24,17 @@ namespace RevitMCPCommandSet.Services
         private UIDocument uiDoc => uiApp.ActiveUIDocument;
         private Document doc => uiDoc.Document;
         private Autodesk.Revit.ApplicationServices.Application app => uiApp.Application;
+
         /// <summary>
         /// 事件等待对象
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+
         /// <summary>
         /// 创建数据（传入数据）
         /// </summary>
         public FilterSetting FilterSetting { get; private set; }
+
         /// <summary>
         /// 执行结果（传出数据）
         /// </summary>
@@ -44,6 +48,7 @@ namespace RevitMCPCommandSet.Services
             FilterSetting = data;
             _resetEvent.Reset();
         }
+
         public void Execute(UIApplication uiapp)
         {
             uiApp = uiapp;
@@ -75,7 +80,7 @@ namespace RevitMCPCommandSet.Services
                 Result = new AIResult<List<object>>
                 {
                     Success = true,
-                    Message = $"成功获取{elementInfoList.Count}个元素信息，具体信息储存在Response属性中"+ message,
+                    Message = $"成功获取{elementInfoList.Count}个元素信息，具体信息储存在Response属性中" + message,
                     Response = elementInfoList,
                 };
             }
@@ -129,6 +134,7 @@ namespace RevitMCPCommandSet.Services
                 System.Diagnostics.Trace.WriteLine($"过滤器设置无效: {errorMessage}");
                 return new List<Element>();
             }
+
             // 记录过滤条件应用情况
             List<string> appliedFilters = new List<string>();
             List<Element> result = new List<Element>();
@@ -155,17 +161,19 @@ namespace RevitMCPCommandSet.Services
             // 输出应用的过滤器信息
             if (appliedFilters.Count > 0)
             {
-                System.Diagnostics.Trace.WriteLine($"已应用 {appliedFilters.Count} 个过滤条件: {string.Join(", ", appliedFilters)}");
+                System.Diagnostics.Trace.WriteLine(
+                    $"已应用 {appliedFilters.Count} 个过滤条件: {string.Join(", ", appliedFilters)}");
                 System.Diagnostics.Trace.WriteLine($"最终筛选结果: 共找到 {result.Count} 个元素");
             }
-            return result;
 
+            return result;
         }
 
         /// <summary>
         /// 根据元素种类(类型或实例)获取满足过滤条件的元素
         /// </summary>
-        private static List<Element> GetElementsByKind(Document doc, FilterSetting settings, bool isElementType, List<string> appliedFilters)
+        private static List<Element> GetElementsByKind(Document doc, FilterSetting settings, bool isElementType,
+            List<string> appliedFilters)
         {
             // 创建基础的FilteredElementCollector
             FilteredElementCollector collector;
@@ -179,6 +187,7 @@ namespace RevitMCPCommandSet.Services
             {
                 collector = new FilteredElementCollector(doc);
             }
+
             // 根据元素种类过滤
             if (isElementType)
             {
@@ -190,6 +199,7 @@ namespace RevitMCPCommandSet.Services
                 collector = collector.WhereElementIsNotElementType();
                 appliedFilters.Add("仅元素实例");
             }
+
             // 创建过滤器列表
             List<ElementFilter> filters = new List<ElementFilter>();
             // 1. 类别过滤器
@@ -200,21 +210,22 @@ namespace RevitMCPCommandSet.Services
                 {
                     throw new ArgumentException($"无法将 '{settings.FilterCategory}' 转换为有效的Revit类别。");
                 }
+
                 ElementCategoryFilter categoryFilter = new ElementCategoryFilter(category);
                 filters.Add(categoryFilter);
                 appliedFilters.Add($"类别：{settings.FilterCategory}");
             }
+
             // 2. 元素类型过滤器
             if (!string.IsNullOrWhiteSpace(settings.FilterElementType))
             {
-
                 Type elementType = null;
                 // 尝试解析类型名称的各种可能形式
                 string[] possibleTypeNames = new string[]
                 {
-                    settings.FilterElementType,                                    // 原始输入
-                    $"Autodesk.Revit.DB.{settings.FilterElementType}, RevitAPI",  // Revit API命名空间
-                    $"{settings.FilterElementType}, RevitAPI"                      // 完整限定带程序集
+                    settings.FilterElementType, // 原始输入
+                    $"Autodesk.Revit.DB.{settings.FilterElementType}, RevitAPI", // Revit API命名空间
+                    $"{settings.FilterElementType}, RevitAPI" // 完整限定带程序集
                 };
                 foreach (string typeName in possibleTypeNames)
                 {
@@ -222,6 +233,7 @@ namespace RevitMCPCommandSet.Services
                     if (elementType != null)
                         break;
                 }
+
                 if (elementType != null)
                 {
                     ElementClassFilter classFilter = new ElementClassFilter(elementType);
@@ -233,6 +245,7 @@ namespace RevitMCPCommandSet.Services
                     throw new Exception($"警告：无法找到类型 '{settings.FilterElementType}'");
                 }
             }
+
             // 3. 族符号过滤器 (仅适用于元素实例)
             if (!isElementType && settings.FilterFamilySymbolId > 0)
             {
@@ -252,9 +265,11 @@ namespace RevitMCPCommandSet.Services
                 else
                 {
                     string elementType = symbolElement != null ? symbolElement.GetType().Name : "不存在";
-                    System.Diagnostics.Trace.WriteLine($"警告：ID为 {settings.FilterFamilySymbolId} 的元素{(symbolElement == null ? "不存在" : "不是有效的FamilySymbol")} (实际类型: {elementType})");
+                    System.Diagnostics.Trace.WriteLine(
+                        $"警告：ID为 {settings.FilterFamilySymbolId} 的元素{(symbolElement == null ? "不存在" : "不是有效的FamilySymbol")} (实际类型: {elementType})");
                 }
             }
+
             // 4. 空间范围过滤器
             if (settings.BoundingBoxMin != null && settings.BoundingBoxMax != null)
             {
@@ -266,9 +281,11 @@ namespace RevitMCPCommandSet.Services
                 // 创建相交过滤器
                 BoundingBoxIntersectsFilter boundingBoxFilter = new BoundingBoxIntersectsFilter(outline);
                 filters.Add(boundingBoxFilter);
-                appliedFilters.Add($"空间范围过滤：Min({settings.BoundingBoxMin.X:F2}, {settings.BoundingBoxMin.Y:F2}, {settings.BoundingBoxMin.Z:F2}), " +
-                                  $"Max({settings.BoundingBoxMax.X:F2}, {settings.BoundingBoxMax.Y:F2}, {settings.BoundingBoxMax.Z:F2}) mm");
+                appliedFilters.Add(
+                    $"空间范围过滤：Min({settings.BoundingBoxMin.X:F2}, {settings.BoundingBoxMin.Y:F2}, {settings.BoundingBoxMin.Z:F2}), " +
+                    $"Max({settings.BoundingBoxMax.X:F2}, {settings.BoundingBoxMax.Y:F2}, {settings.BoundingBoxMax.Z:F2}) mm");
             }
+
             // 应用组合过滤器
             if (filters.Count > 0)
             {
@@ -281,6 +298,7 @@ namespace RevitMCPCommandSet.Services
                     System.Diagnostics.Trace.WriteLine($"应用了{filters.Count}个过滤条件的组合过滤器 (逻辑AND关系)");
                 }
             }
+
             return collector.ToElements().ToList();
         }
 
@@ -384,7 +402,7 @@ namespace RevitMCPCommandSet.Services
                 if (element?.Category == null)
                     return null;
 
-                ElementInstanceInfo elementInfo = new ElementInstanceInfo();        //创建存储元素完整信息的自定义类
+                ElementInstanceInfo elementInfo = new ElementInstanceInfo(); //创建存储元素完整信息的自定义类
                 // ID
                 elementInfo.Id = element.Id.IntegerValue;
                 // UniqueId
@@ -409,12 +427,13 @@ namespace RevitMCPCommandSet.Services
                 elementInfo.BoundingBox = GetBoundingBoxInfo(element);
                 // 参数
                 //elementInfo.Parameters = GetDimensionParameters(element);
-                ParameterInfo thicknessParam = GetThicknessInfo(element);      //厚度参数
+                ParameterInfo thicknessParam = GetThicknessInfo(element); //厚度参数
                 if (thicknessParam != null)
                 {
                     elementInfo.Parameters.Add(thicknessParam);
                 }
-                ParameterInfo heightParam = GetBoundingBoxHeight(elementInfo.BoundingBox);      //高度参数
+
+                ParameterInfo heightParam = GetBoundingBoxHeight(elementInfo.BoundingBox); //高度参数
                 if (heightParam != null)
                 {
                     elementInfo.Parameters.Add(heightParam);
@@ -451,11 +470,12 @@ namespace RevitMCPCommandSet.Services
             typeInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), elementType.Category.Id.IntegerValue);
             // 参数字典
             typeInfo.Parameters = GetDimensionParameters(elementType);
-            ParameterInfo thicknessParam = GetThicknessInfo(elementType);      //厚度参数
+            ParameterInfo thicknessParam = GetThicknessInfo(elementType); //厚度参数
             if (thicknessParam != null)
             {
                 typeInfo.Parameters.Add(thicknessParam);
             }
+
             return typeInfo;
         }
 
@@ -475,8 +495,9 @@ namespace RevitMCPCommandSet.Services
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
-                    BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue) : null,
+                    BuiltInCategory = element.Category != null
+                        ? Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue)
+                        : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -513,6 +534,7 @@ namespace RevitMCPCommandSet.Services
                 return null;
             }
         }
+
         /// <summary>
         /// 创建空间元素的信息
         /// </summary>
@@ -530,8 +552,9 @@ namespace RevitMCPCommandSet.Services
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
-                    BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue) : null,
+                    BuiltInCategory = element.Category != null
+                        ? Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue)
+                        : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -575,6 +598,7 @@ namespace RevitMCPCommandSet.Services
                 return null;
             }
         }
+
         /// <summary>
         /// 创建视图元素的信息
         /// </summary>
@@ -593,8 +617,9 @@ namespace RevitMCPCommandSet.Services
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
-                    BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue) : null,
+                    BuiltInCategory = element.Category != null
+                        ? Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue)
+                        : null,
                     ElementClass = element.GetType().Name,
                     ViewType = view.ViewType.ToString(),
                     Scale = view.Scale,
@@ -633,6 +658,7 @@ namespace RevitMCPCommandSet.Services
                         {
                             info.IsActive = true;
                         }
+
                         break;
                     }
                 }
@@ -645,6 +671,7 @@ namespace RevitMCPCommandSet.Services
                 return null;
             }
         }
+
         /// <summary>
         /// 创建注释元素的信息
         /// </summary>
@@ -661,8 +688,9 @@ namespace RevitMCPCommandSet.Services
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
-                    BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue) : null,
+                    BuiltInCategory = element.Category != null
+                        ? Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue)
+                        : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -714,6 +742,7 @@ namespace RevitMCPCommandSet.Services
                             position.Z * 304.8);
                     }
                 }
+
                 return info;
             }
             catch (Exception ex)
@@ -722,6 +751,7 @@ namespace RevitMCPCommandSet.Services
                 return null;
             }
         }
+
         /// <summary>
         /// 创建组或链接的信息
         /// </summary>
@@ -738,8 +768,9 @@ namespace RevitMCPCommandSet.Services
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
-                    BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue) : null,
+                    BuiltInCategory = element.Category != null
+                        ? Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue)
+                        : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -809,8 +840,9 @@ namespace RevitMCPCommandSet.Services
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
-                    BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue) : null,
+                    BuiltInCategory = element.Category != null
+                        ? Enum.GetName(typeof(BuiltInCategory), element.Category.Id.IntegerValue)
+                        : null,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
                 return basicInfo;
@@ -875,6 +907,7 @@ namespace RevitMCPCommandSet.Services
                     Value = $"{thicknessParam.AsDouble() * 304.8}"
                 };
             }
+
             return null;
         }
 
@@ -908,6 +941,7 @@ namespace RevitMCPCommandSet.Services
                     {
                         level = doc.GetElement(levelParam.AsElementId()) as Level;
                     }
+
                     // 如果上面的方法获取不到，尝试使用SCHEDULE_LEVEL_PARAM
                     if (level == null)
                     {
@@ -1066,7 +1100,6 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public static bool IsDimensionParameter(Parameter param)
         {
-
 #if REVIT2023_OR_GREATER
             // 在Revit 2023中使用Definition的GetDataType()方法获取参数类型
             ForgeTypeId paramTypeId = param.Definition.GetDataType();
@@ -1089,7 +1122,6 @@ namespace RevitMCPCommandSet.Services
             return isDimensionType;
 #endif
         }
-
     }
 
     /// <summary>
@@ -1101,47 +1133,56 @@ namespace RevitMCPCommandSet.Services
         /// Id
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// Id
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 类型Id
         /// </summary>
         public int TypeId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 所属房间Id
         /// </summary>
         public int RoomId { get; set; }
+
         /// <summary>
         /// 所属标高名称
         /// </summary>
         public LevelInfo Level { get; set; }
+
         /// <summary>
         /// 位置信息
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
+
         /// <summary>
         /// 实例参数
         /// </summary>
         public List<ParameterInfo> Parameters { get; set; } = new List<ParameterInfo>();
-
     }
 
     /// <summary>
@@ -1153,31 +1194,36 @@ namespace RevitMCPCommandSet.Services
         /// ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// Id
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别ID
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 类型参数
         /// </summary>
         public List<ParameterInfo> Parameters { get; set; } = new List<ParameterInfo>();
-
     }
 
     /// <summary>
@@ -1189,47 +1235,58 @@ namespace RevitMCPCommandSet.Services
         /// 元素ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// 元素唯一ID
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别(可选)
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 元素的.NET类名称
         /// </summary>
         public string ElementClass { get; set; }
+
         /// <summary>
         /// 高程值 (适用于标高，单位mm)
         /// </summary>
         public double? Elevation { get; set; }
+
         /// <summary>
         /// 所属标高
         /// </summary>
         public LevelInfo Level { get; set; }
+
         /// <summary>
         /// 位置信息
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
+
         /// <summary>
         /// 轴网线(适用于轴网)
         /// </summary>
         public JZLine GridLine { get; set; }
     }
+
     /// <summary>
     /// 存储空间元素(房间、区域等)基础信息的类
     /// </summary>
@@ -1239,46 +1296,57 @@ namespace RevitMCPCommandSet.Services
         /// 元素ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// 元素唯一ID
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 编号
         /// </summary>
         public string Number { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别(可选)
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 元素的.NET类名称
         /// </summary>
         public string ElementClass { get; set; }
+
         /// <summary>
         /// 面积(单位mm²)
         /// </summary>
         public double? Area { get; set; }
+
         /// <summary>
         /// 体积(单位mm³)
         /// </summary>
         public double? Volume { get; set; }
+
         /// <summary>
         /// 周长(单位mm)
         /// </summary>
         public double? Perimeter { get; set; }
+
         /// <summary>
         /// 所在标高
         /// </summary>
@@ -1289,6 +1357,7 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
     }
+
     /// <summary>
     /// 存储视图元素基础信息的类
     /// </summary>
@@ -1298,26 +1367,32 @@ namespace RevitMCPCommandSet.Services
         /// 元素ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// 元素唯一ID
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别(可选)
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 元素的.NET类名称
         /// </summary>
@@ -1363,6 +1438,7 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public bool IsActive { get; set; }
     }
+
     /// <summary>
     /// 存储注释元素基础信息的类
     /// </summary>
@@ -1372,38 +1448,47 @@ namespace RevitMCPCommandSet.Services
         /// 元素ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// 元素唯一ID
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别(可选)
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 元素的.NET类名称
         /// </summary>
         public string ElementClass { get; set; }
+
         /// <summary>
         /// 所在视图
         /// </summary>
         public string OwnerView { get; set; }
+
         /// <summary>
         /// 文本内容 (适用于文字标注)
         /// </summary>
         public string TextContent { get; set; }
+
         /// <summary>
         /// 位置信息(单位mm)
         /// </summary>
@@ -1413,11 +1498,13 @@ namespace RevitMCPCommandSet.Services
         /// 位置信息
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
+
         /// <summary>
         /// 尺寸值 (适用于尺寸标注)
         /// </summary>
         public string DimensionValue { get; set; }
     }
+
     /// <summary>
     /// 存储组和链接基础信息的类
     /// </summary>
@@ -1427,46 +1514,57 @@ namespace RevitMCPCommandSet.Services
         /// 元素ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// 元素唯一ID
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别(可选)
         /// </summary>
         public string BuiltInCategory { get; set; }
+
         /// <summary>
         /// 元素的.NET类名称
         /// </summary>
         public string ElementClass { get; set; }
+
         /// <summary>
         /// 组成员数量
         /// </summary>
         public int? MemberCount { get; set; }
+
         /// <summary>
         /// 组类型
         /// </summary>
         public string GroupType { get; set; }
+
         /// <summary>
         /// 链接状态
         /// </summary>
         public string LinkStatus { get; set; }
+
         /// <summary>
         /// 链接路径
         /// </summary>
         public string LinkPath { get; set; }
+
         /// <summary>
         /// 位置信息(单位mm)
         /// </summary>
@@ -1477,6 +1575,7 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
     }
+
     /// <summary>
     /// 存储元素基础信息的增强类
     /// </summary>
@@ -1486,22 +1585,27 @@ namespace RevitMCPCommandSet.Services
         /// 元素ID
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// 元素唯一ID
         /// </summary>
         public string UniqueId { get; set; }
+
         /// <summary>
         /// 名称
         /// </summary>
         public string Name { get; set; }
+
         /// <summary>
         /// 族名称
         /// </summary>
         public string FamilyName { get; set; }
+
         /// <summary>
         /// 类别名称
         /// </summary>
         public string Category { get; set; }
+
         /// <summary>
         /// 内置类别(可选)
         /// </summary>
@@ -1512,7 +1616,6 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
     }
-
 
 
     /// <summary>
@@ -1542,7 +1645,4 @@ namespace RevitMCPCommandSet.Services
         public string Name { get; set; }
         public double Height { get; set; }
     }
-
-
-
 }

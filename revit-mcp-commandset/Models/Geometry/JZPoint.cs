@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace RevitMCPCommandSet.Models.Common;
+namespace RevitMCPCommandSet.Models.Geometry;
 
 /// <summary>
 ///     三维点

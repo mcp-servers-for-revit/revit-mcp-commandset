@@ -2,6 +2,8 @@
 using RevitMCPSDK.API.Interfaces;
 using RevitMCPCommandSet.Models.Common;
 using RevitMCPCommandSet.Utils;
+using RevitMCPCommandSet.Commands;
+using RevitMCPCommandSet.Models.Geometry;
 
 namespace RevitMCPCommandSet.Services
 {
@@ -14,12 +16,13 @@ namespace RevitMCPCommandSet.Services
 
         /// <summary>
         /// 事件等待对象
-        /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+
         /// <summary>
         /// 创建数据（传入数据）
         /// </summary>
         public List<PointElement> CreatedInfo { get; private set; }
+
         /// <summary>
         /// 执行结果（传出数据）
         /// </summary>
@@ -33,6 +36,7 @@ namespace RevitMCPCommandSet.Services
             CreatedInfo = data;
             _resetEvent.Reset();
         }
+
         public void Execute(UIApplication uiapp)
         {
             uiApp = uiapp;
@@ -49,7 +53,7 @@ namespace RevitMCPCommandSet.Services
                     // Step1 获取标高和偏移
                     Level baseLevel = null;
                     Level topLevel = null;
-                    double topOffset = -1;  // ft
+                    double topOffset = -1; // ft
                     double baseOffset = -1; // ft
                     baseLevel = doc.FindNearestLevel(data.BaseLevel / 304.8);
                     baseOffset = (data.BaseOffset + data.BaseLevel) / 304.8 - baseLevel.Elevation;
@@ -74,6 +78,7 @@ namespace RevitMCPCommandSet.Services
                             }
                         }
                     }
+
                     if (builtInCategory == BuiltInCategory.INVALID)
                         continue;
                     if (symbol == null)
@@ -86,12 +91,13 @@ namespace RevitMCPCommandSet.Services
                         if (symbol == null)
                         {
                             symbol = new FilteredElementCollector(doc)
-                            .OfClass(typeof(FamilySymbol))
-                            .OfCategory(builtInCategory)
-                            .Cast<FamilySymbol>()
-                            .FirstOrDefault();
+                                .OfClass(typeof(FamilySymbol))
+                                .OfCategory(builtInCategory)
+                                .Cast<FamilySymbol>()
+                                .FirstOrDefault();
                         }
                     }
+
                     if (symbol == null)
                         continue;
 
@@ -104,7 +110,8 @@ namespace RevitMCPCommandSet.Services
                             symbol.Activate();
 
                         // 调用FamilyInstance通用创建方法
-                        var instance = doc.CreateInstance(symbol, JZPoint.ToXYZ(data.LocationPoint), null, baseLevel, topLevel, baseOffset, topOffset);
+                        var instance = doc.CreateInstance(symbol, JZPoint.ToXYZ(data.LocationPoint), null, baseLevel,
+                            topLevel, baseOffset, topOffset);
                         if (instance != null)
                         {
                             if (builtInCategory == BuiltInCategory.OST_Doors)
@@ -118,10 +125,12 @@ namespace RevitMCPCommandSet.Services
 
                             elementIds.Add(instance.Id.IntegerValue);
                         }
+
                         //doc.Refresh();
                         transaction.Commit();
                     }
                 }
+
                 Result = new AIResult<List<int>>
                 {
                     Success = true,
@@ -161,6 +170,5 @@ namespace RevitMCPCommandSet.Services
         {
             return "创建点状构件";
         }
-
     }
 }

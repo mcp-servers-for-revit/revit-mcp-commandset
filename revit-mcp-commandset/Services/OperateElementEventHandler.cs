@@ -21,10 +21,12 @@ namespace RevitMCPCommandSet.Services
         /// 事件等待对象
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+
         /// <summary>
         /// 创建数据（传入数据）
         /// </summary>
         public OperationSetting OperationData { get; private set; }
+
         /// <summary>
         /// 执行结果（传出数据）
         /// </summary>
@@ -38,6 +40,7 @@ namespace RevitMCPCommandSet.Services
             OperationData = data;
             _resetEvent.Reset();
         }
+
         public void Execute(UIApplication uiapp)
         {
             uiApp = uiapp;
@@ -137,7 +140,9 @@ namespace RevitMCPCommandSet.Services
                         // 尝试找到默认3D视图或任何其他可用的3D视图
                         targetView = collector
                             .Cast<View3D>()
-                            .FirstOrDefault(v => !v.IsTemplate && !v.IsLocked && (v.Name.Contains("{3D}") || v.Name.Contains("Default 3D")));
+                            .FirstOrDefault(v =>
+                                !v.IsTemplate && !v.IsLocked &&
+                                (v.Name.Contains("{3D}") || v.Name.Contains("Default 3D")));
 
                         if (targetView == null)
                         {
@@ -190,8 +195,10 @@ namespace RevitMCPCommandSet.Services
 
                     // 增加边界框尺寸，使其略大于元素
                     double offset = 1.0; // 1英尺的偏移
-                    boundingBox.Min = new XYZ(boundingBox.Min.X - offset, boundingBox.Min.Y - offset, boundingBox.Min.Z - offset);
-                    boundingBox.Max = new XYZ(boundingBox.Max.X + offset, boundingBox.Max.Y + offset, boundingBox.Max.Z + offset);
+                    boundingBox.Min = new XYZ(boundingBox.Min.X - offset, boundingBox.Min.Y - offset,
+                        boundingBox.Min.Z - offset);
+                    boundingBox.Max = new XYZ(boundingBox.Max.X + offset, boundingBox.Max.Y + offset,
+                        boundingBox.Max.Z + offset);
 
                     // 在3D视图中启用并设置剖切框
                     using (Transaction trans = new Transaction(doc, "创建剖切框"))
@@ -214,6 +221,7 @@ namespace RevitMCPCommandSet.Services
                         SetElementsColor(doc, elementIds, setting.ColorValue);
                         trans.Commit();
                     }
+
                     // 滚动到这些元素使其可见
                     uidoc.ShowElements(elementIds);
                     return true;
@@ -242,6 +250,7 @@ namespace RevitMCPCommandSet.Services
 
                         trans.Commit();
                     }
+
                     return true;
 
                 case ElementOperationType.Delete:
@@ -252,6 +261,7 @@ namespace RevitMCPCommandSet.Services
                         doc.Delete(elementIds);
                         trans.Commit();
                     }
+
                     return true;
 
                 case ElementOperationType.Hide:
@@ -262,6 +272,7 @@ namespace RevitMCPCommandSet.Services
                         doc.ActiveView.HideElements(elementIds);
                         trans.Commit();
                     }
+
                     return true;
 
                 case ElementOperationType.TempHide:
@@ -272,6 +283,7 @@ namespace RevitMCPCommandSet.Services
                         doc.ActiveView.HideElementsTemporary(elementIds);
                         trans.Commit();
                     }
+
                     return true;
 
                 case ElementOperationType.Isolate:
@@ -282,6 +294,7 @@ namespace RevitMCPCommandSet.Services
                         doc.ActiveView.IsolateElementsTemporary(elementIds);
                         trans.Commit();
                     }
+
                     return true;
 
                 case ElementOperationType.Unhide:
@@ -292,6 +305,7 @@ namespace RevitMCPCommandSet.Services
                         doc.ActiveView.UnhideElements(elementIds);
                         trans.Commit();
                     }
+
                     return true;
 
                 case ElementOperationType.ResetIsolate:
@@ -302,6 +316,7 @@ namespace RevitMCPCommandSet.Services
                         doc.ActiveView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
                         trans.Commit();
                     }
+
                     return true;
 
                 default:
@@ -322,6 +337,7 @@ namespace RevitMCPCommandSet.Services
             {
                 elementColor = new int[] { 255, 0, 0 }; // 默认红色
             }
+
             // 确保RGB值在0-255范围内
             int r = Math.Max(0, Math.Min(255, elementColor[0]));
             int g = Math.Max(0, Math.Min(255, elementColor[1]));
@@ -365,6 +381,5 @@ namespace RevitMCPCommandSet.Services
                 doc.ActiveView.SetElementOverrides(id, overrideSettings);
             }
         }
-
     }
 }
