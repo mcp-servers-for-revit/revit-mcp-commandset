@@ -7,7 +7,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="" />
+    <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.revit-mcp-commandset/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.revit-mcp-commandset/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -85,7 +87,7 @@
       <option name="presentableId" value="Default" />
       <updated>1758184609950</updated>
       <workItem from="1758184624025" duration="7878000" />
-      <workItem from="1758250431953" duration="3449000" />
+      <workItem from="1758250431953" duration="4573000" />
     </task>
     <task id="LOCAL-00001" summary="存档：通用创建mcp命令创建前">
       <option name="closed" value="true" />
