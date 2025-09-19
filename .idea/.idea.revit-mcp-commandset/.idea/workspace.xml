@@ -7,10 +7,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.revit-mcp-commandset/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.revit-mcp-commandset/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Utils/ProjectUtils.cs" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Utils/ProjectUtils.cs" afterDir="false" />
-    </list>
+    <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -23,6 +20,8 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5d1fac278432487394a8a835d5dc020e1a2aed0/b1/6b584fab/ElementFilter.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/revit-mcp-commandset/Features/ElementFilter/AIElementFilterCommand.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/revit-mcp-commandset/Utils/FamilyInstanceCreator.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://E:/工作文档/开发类/MyCode/Revit-MCP/revit-mcp-commandset/revit-mcp-commandset/Utils/ProjectUtils.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://diff.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
@@ -86,8 +85,17 @@
       <option name="presentableId" value="Default" />
       <updated>1758184609950</updated>
       <workItem from="1758184624025" duration="7878000" />
-      <workItem from="1758250431953" duration="2882000" />
+      <workItem from="1758250431953" duration="3449000" />
     </task>
+    <task id="LOCAL-00001" summary="存档：通用创建mcp命令创建前">
+      <option name="closed" value="true" />
+      <created>1758254319169</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1758254319169</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -108,6 +116,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="存档：通用创建mcp命令创建前" />
+    <option name="LAST_COMMIT_MESSAGE" value="存档：通用创建mcp命令创建前" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

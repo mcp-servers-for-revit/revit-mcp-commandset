@@ -1,0 +1,52 @@
+{
+  "name": "RevitMCPCommandSet",
+  "description": "Basic command collection for Revit AI assistance",
+  "developer": {
+    "name": "revit-mcp",
+    "email": "",
+    "website": "",
+    "organization": "revit-mcp"
+  },
+  "commands": [
+    {
+      "commandName": "say_hello",
+      "description": "Displays a greeting dialog",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "get_available_family_types",
+      "description": "get available family types",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "get_current_view_elements",
+      "description": "get current view elements",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "get_current_view_info",
+      "description": "get current view info",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "create_Wall",
+      "description": "create a wall",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "delete_element",
+      "description": "Deletes elements using ElementId",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+	{
+      "commandName": "tag_all_walls",
+      "description": "Tag all the walls in the model",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+	{
+      "commandName": "create_line_based_element",
+      "description": "Create line based element such as wall",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    }
+  ]
+}
