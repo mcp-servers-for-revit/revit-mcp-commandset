@@ -459,7 +459,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
             typeInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), elementType.Category.Id.IntegerValue);
             // 参数字典
             typeInfo.Parameters = GetDimensionParameters(elementType);
-            ParameterInfo thicknessParam = GetThicknessInfo(elementType); //厚度参数
+            FilterParameterInfo thicknessParam = GetThicknessInfo(elementType); //厚度参数
             if (thicknessParam != null)
             {
                 typeInfo.Parameters.Add(thicknessParam);
