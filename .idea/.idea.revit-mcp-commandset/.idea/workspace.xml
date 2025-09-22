@@ -9,6 +9,20 @@
   <component name="ChangeListManager">
     <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.revit-mcp-commandset/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.revit-mcp-commandset/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/2025-09-19-mcp.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/ElementCreation/CreatePointElementCommand.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/ElementCreation/CreatePointElementEventHandler.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/ElementCreation/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/ElementFilter/AIElementFilterEventHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Features/ElementFilter/AIElementFilterEventHandler.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/CreateFamilyInstanceEventHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/CreateFamilyInstanceEventHandler.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/GetFamilyCreationSuggestionCommand.cs" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/GetFamilyCreationSuggestionCommand.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/GetFamilyCreationSuggestionEventHandler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/GetFamilyCreationSuggestionEventHandler.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Utils/FamilyCreationParameterAnalyzer.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Utils/FamilyInstanceCreator.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Utils/ProjectUtils.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Utils/SafeFamilyInstanceCreator.cs" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,7 +101,9 @@
       <option name="presentableId" value="Default" />
       <updated>1758184609950</updated>
       <workItem from="1758184624025" duration="7878000" />
-      <workItem from="1758250431953" duration="4573000" />
+      <workItem from="1758250431953" duration="6471000" />
+      <workItem from="1758265425486" duration="4604000" />
+      <workItem from="1758271564511" duration="5551000" />
     </task>
     <task id="LOCAL-00001" summary="存档：通用创建mcp命令创建前">
       <option name="closed" value="true" />
@@ -106,11 +122,45 @@
   <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="User">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="*" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ID_WIDTH">
+                <map>
+                  <entry key="Table.Default.Author.ColumnIdWidth" value="73" />
+                  <entry key="Table.Default.Date.ColumnIdWidth" value="62" />
+                  <entry key="Table.GitHub.CommitStatus.ColumnIdWidth" value="61" />
+                </map>
+              </option>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>

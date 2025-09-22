@@ -2,7 +2,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitMCPSDK.API.Interfaces;
 using RevitMCPCommandSet.Models.Common;
-using RevitMCPCommandSet.Utils;
+using RevitMCPCommandSet.Utils.FamilyCreation;
 
 namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
 {
@@ -50,9 +50,9 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                 {
                     trans.Start();
 
-                    // 使用SafeFamilyInstanceCreator创建实例
-                    var creator = new SafeFamilyInstanceCreator(doc);
-                    var createResult = creator.CreateInstance(parameters);
+                    // 使用FamilyInstanceService创建实例
+                    var service = new FamilyInstanceService(doc);
+                    var createResult = service.CreateInstance(parameters);
 
                     if (createResult.Success)
                     {

@@ -30,10 +30,12 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
             try
             {
                 // 解析参数
-                int typeId = parameters["typeId"].Value<int>();
-
+                int elementId = parameters["data"]["elementId"].Value<int>();
+                if (elementId == -1||elementId == 0)
+                    throw new ArgumentNullException(nameof(elementId), "AI传入数据为空");
+                
                 // 设置事件处理器参数
-                _handler.SetParameters(typeId);
+                _handler.SetParameters(elementId);
 
                 // 触发外部事件并等待完成
                 if (RaiseAndWaitForCompletion(5000))

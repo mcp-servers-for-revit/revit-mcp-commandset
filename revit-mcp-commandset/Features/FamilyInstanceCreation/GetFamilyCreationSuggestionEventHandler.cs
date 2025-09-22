@@ -2,7 +2,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitMCPSDK.API.Interfaces;
 using RevitMCPCommandSet.Models.Common;
-using RevitMCPCommandSet.Utils;
+using RevitMCPCommandSet.Utils.FamilyCreation;
 
 namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
 {
@@ -59,16 +59,15 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                 }
                 else
                 {
-                    // 分析创建参数需求
-                    var requirements = FamilyCreationParameterAnalyzer.AnalyzeRequirements(symbol);
+                    // 使用FamilyInstanceService分析创建参数需求
+                    var service = new FamilyInstanceService(doc);
+                    var requirements = service.AnalyzeRequirements(typeId);
 
                     Result = new AIResult<FamilyCreationRequirements>
                     {
                         Success = true,
                         Response = requirements,
-                        Message = requirements.IsSupported
-                            ? "成功获取族创建参数需求"
-                            : $"族类型不支持: {requirements.UnsupportedReason}"
+                        Message = "成功获取族创建参数需求"
                     };
                 }
             }

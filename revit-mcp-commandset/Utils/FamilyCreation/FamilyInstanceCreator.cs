@@ -1,6 +1,6 @@
 ﻿using Autodesk.Revit.DB.Structure;
 
-namespace RevitMCPCommandSet.Utils
+namespace RevitMCPCommandSet.Utils.FamilyCreation
 {
     /// <summary>
     /// 族实例创建器类，用于配置和创建各种类型的族实例
@@ -83,90 +83,7 @@ namespace RevitMCPCommandSet.Utils
         }
 
         #endregion
-
-        #region 获取创建方法建议
-        /// <summary>
-        /// 获取当前族类型建议使用的创建方法
-        /// </summary>
-        /// <param name="familySymbol">族类型</param>
-        /// <returns>建议的创建方法名称和描述</returns>
-        public static string GetSuggestedCreationMethod(FamilySymbol familySymbol)
-        {
-            if (familySymbol == null)
-                return "族类型为空，无法提供建议";
-
-            switch (familySymbol.Family.FamilyPlacementType)
-            {
-                case FamilyPlacementType.OneLevelBased:
-                    return "SetupOneLevelBased() - 基于单个标高的族（如：公制常规模型）\n" +
-                           "必需参数：locationPoint\n" +
-                           "可选参数：baseLevel（指定时将关联到标高）";
-
-                case FamilyPlacementType.OneLevelBasedHosted:
-                    return "SetupOneLevelBasedHosted() - 基于单个标高和主体的族（如：门、窗）\n" +
-                           "必需参数：locationPoint\n" +
-                           "可选参数：baseLevel（指定时将关联到标高）\n" +
-                           "注意：系统将自动查找最近的宿主元素";
-
-                case FamilyPlacementType.TwoLevelsBased:
-                    return "SetupTwoLevelsBased() - 基于两个标高的族（如：柱子）\n" +
-                           "必需参数：locationPoint, baseLevel\n" +
-                           "可选参数：topLevel, baseOffset, topOffset\n" +
-                           "注意：系统将根据族类别自动判断结构类型";
-
-                case FamilyPlacementType.ViewBased:
-                    return "SetupViewBased() - 基于视图的族（如：详图注释）\n" +
-                           "必需参数：locationPoint, view";
-
-                case FamilyPlacementType.WorkPlaneBased:
-                    return "SetupWorkPlaneBased() - 基于工作平面的族（如：基于面的公制常规模型）\n" +
-                           "必需参数：locationPoint\n" +
-                           "可选参数：faceDirection（未指定时系统自动生成）, hostCategories\n" +
-                           "注意：系统将自动查找最近的宿主面";
-
-                case FamilyPlacementType.CurveBased:
-                    return "SetupCurveBased() - 基于线且在工作平面上的族（如：基于线的公制常规模型）\n" +
-                           "必需参数：locationLine\n" +
-                           "可选参数：baseLevel（指定时关联标高，未指定时需要宿主面）, hostCategories";
-
-                case FamilyPlacementType.CurveBasedDetail:
-                    return "SetupCurveBasedDetail() - 基于线且在特定视图中的族（如：详图组件）\n" +
-                           "必需参数：locationLine, view";
-
-                case FamilyPlacementType.CurveDrivenStructural:
-                    return "SetupCurveDrivenStructural() - 结构曲线驱动的族（如：梁、支撑或斜柱）\n" +
-                           "必需参数：locationLine, baseLevel";
-
-                case FamilyPlacementType.Adaptive:
-                    return "SetupAdaptive() - 适应性族（如：自适应公制常规模型、幕墙嵌板）\n" +
-                           "注意：当前版本未实现此类型的创建";
-
-                default:
-                    return $"未知的族放置类型：{familySymbol.Family.FamilyPlacementType}";
-            }
-        }
-
-        /// <summary>
-        /// 显示当前族类型的创建方法建议
-        /// </summary>
-        /// <returns>当前创建器实例，支持链式调用</returns>
-        public FamilyInstanceCreator ShowCreationMethodSuggestion()
-        {
-            if (FamilySymbol != null)
-            {
-                string suggestion = GetSuggestedCreationMethod(FamilySymbol);
-                System.Diagnostics.Trace.WriteLine($"族类型：{FamilySymbol.Name}");
-                System.Diagnostics.Trace.WriteLine($"建议的创建方法：\n{suggestion}");
-            }
-            else
-            {
-                System.Diagnostics.Trace.WriteLine("请先设置FamilySymbol属性");
-            }
-            return this;
-        }
-
-        #endregion
-
+        
         #region 根据FamilyPlacementType的专门配置方法
         /// <summary>
         /// 配置基于单个标高的族（OneLevelBased）
