@@ -433,21 +433,18 @@ namespace RevitMCPCommandSet.Utils.FamilyCreation
             {
                 Required = false,
                 Description = "基准标高的ElementId",
-                Default = -1
             };
 
             requirements.Parameters["baseOffset"] = new ParameterInfo
             {
                 Required = false,
                 Description = "相对基准标高的偏移(mm)",
-                Default = 0
             };
 
             requirements.Parameters["autoFindLevel"] = new ParameterInfo
             {
                 Required = false,
                 Description = "是否自动查找最近标高",
-                Default = true
             };
         }
 
@@ -459,28 +456,24 @@ namespace RevitMCPCommandSet.Utils.FamilyCreation
             {
                 Required = false,
                 Description = "是否自动查找宿主元素",
-                Default = true
             };
 
             requirements.Parameters["searchRadius"] = new ParameterInfo
             {
                 Required = false,
                 Description = "自动查找宿主的搜索半径(mm)",
-                Default = 1000
             };
 
             requirements.Parameters["hostCategories"] = new ParameterInfo
             {
                 Required = false,
                 Description = "宿主类别过滤",
-                Default = new[] { "OST_Walls" }
             };
 
             requirements.Parameters["hostElementId"] = new ParameterInfo
             {
                 Required = false,
                 Description = "指定宿主元素的ElementId",
-                Default = -1
             };
         }
 
@@ -498,7 +491,6 @@ namespace RevitMCPCommandSet.Utils.FamilyCreation
             {
                 Required = false,
                 Description = "相对顶部标高的偏移(mm)",
-                Default = 0
             };
         }
 

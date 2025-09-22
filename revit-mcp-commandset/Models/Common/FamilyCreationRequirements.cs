@@ -54,12 +54,5 @@ namespace RevitMCPCommandSet.Models.Common
         /// </summary>
         [JsonProperty("description")]
         public string Description { get; set; }
-
-
-        /// <summary>
-        /// 默认值（仅可选参数使用）
-        /// </summary>
-        [JsonProperty("default")]
-        public object Default { get; set; }
     }
 }
