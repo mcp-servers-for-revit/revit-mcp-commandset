@@ -59,7 +59,6 @@ revit-mcp-commandset/
 │       └── JZFace.cs
 ├── Utils/                     # 工具类层
 │   └── FamilyCreation/       # 族创建工具类
-│       ├── FamilyInstanceService.cs
 │       └── FamilyInstanceCreator.cs
 └── RevitMCPCommandSet.csproj  # 项目配置
 ```
@@ -258,4 +257,28 @@ A: 在 Features 下创建新目录，将相关的 Command 和 EventHandler 放�
 
 ---
 
+## 📊 项目最近更新
+
+基于 Git 历史记录的最新进展（截至 2025-09-23）：
+
+### v2.1.0 - API 优化更新 (2025-09-23)
+- 🔧 **AIResult.Message字段优化**：明确Response数据类型和含义，提升API文档清晰度
+- 📚 **文档全面更新**：同步更新所有功能模块README.md，反映最新架构变更和功能特性
+- 🎯 **统一规范完善**：强化"data"包裹层要求，保持接口一致性
+
+### v2.0.x - 架构重构系列 (2025-09-22)
+- 🧹 **FamilyCreationDefaults清理** (662eaae)：删除冗余默认值类，移至FamilyInstanceService静态属性
+- 🏗️ **双层架构完善** (03999cc)：Creator专注核心创建逻辑，Service负责智能验证和建议
+- ⚡ **错误处理标准化** (9aa1c0e)：FamilyInstanceCreator改用标准异常抛出，替代Console.WriteLine
+- 🚀 **参数建议精简** (8991e6e)：彻底优化族创建参数建议格式，提升AI理解效率
+- 🔄 **ElementFilter修复** (fcd879f)：完成ParameterInfo类型引用修复，确保过滤功能稳定
+
+---
+
 更多详细信息请参考项目源码和 RevitMCPSDK 文档。
+
+### 📋 相关文档链接
+- [族实例创建功能文档](./revit-mcp-commandset/Features/FamilyInstanceCreation/README.md)
+- [元素过滤器文档](./revit-mcp-commandset/Features/ElementFilter/README.md)
+- [元素操作器文档](./revit-mcp-commandset/Features/ElementOperation/README.md)
+- [族创建工具模块文档](./revit-mcp-commandset/Utils/FamilyCreation/README.md)

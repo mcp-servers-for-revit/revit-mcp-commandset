@@ -21,7 +21,7 @@ FamilyInstanceCreation 是 Revit MCP CommandSet 的核心功能模块，基于�
 
 ```json
 {
-  "typeId": 12345
+  "elementId": 12345
 }
 ```
 
@@ -29,53 +29,7 @@ FamilyInstanceCreation 是 Revit MCP CommandSet 的核心功能模块，基于�
 
 | 参数 | 类型 | 必需 | 说明 |
 |------|------|------|------|
-| typeId | int | ✅ | 族类型的 ElementId |
-
-#### 响应格式
-
-```json
-{
-  "success": true,
-  "message": "成功获取族创建参数需求",
-  "response": {
-    "typeId": 12345,
-    "familyName": "公制常规模型",
-    "typeName": "桌子",
-    "placementType": "OneLevelBased",
-    "isSupported": true,
-    "requiredParameters": {
-      "locationPoint": {
-        "type": "JZPoint",
-        "unit": "mm",
-        "description": "放置点坐标",
-        "example": { "x": 5000.0, "y": 3000.0, "z": 0.0 }
-      }
-    },
-    "optionalParameters": {
-      "baseLevelId": {
-        "type": "int",
-        "unit": "ElementId",
-        "description": "关联标高的ElementId，不指定时自动查找最近标高",
-        "example": 12345
-      },
-      "baseOffset": {
-        "type": "double",
-        "unit": "mm",
-        "description": "相对标高的偏移距离",
-        "example": 1000.0
-      }
-    },
-    "examples": {
-      "typical": {
-        "typeId": 12345,
-        "locationPoint": { "x": 5000.0, "y": 3000.0, "z": 0.0 },
-        "autoFindLevel": true,
-        "baseOffset": 500.0
-      }
-    }
-  }
-}
-```
+| elementId | int | ✅ | 族类型的 ElementId |
 
 ### 2. create_family_instance
 
@@ -119,26 +73,6 @@ FamilyInstanceCreation 是 Revit MCP CommandSet 的核心功能模块，基于�
 | hostCategories | string[] | null | 宿主类别名称数组 |
 | faceDirection | JZPoint | null | 面方向向量（归一化） |
 | handDirection | JZPoint | null | 手方向向量（归一化） |
-
-#### 响应格式
-
-```json
-{
-  "success": true,
-  "message": "族实例创建成功",
-  "response": {
-    "success": true,
-    "message": "族实例创建成功",
-    "elementId": 67890,
-    "elementType": "专用设备",
-    "additionalInfo": {
-      "FamilyName": "公制常规模型",
-      "TypeName": "桌子",
-      "PlacementType": "OneLevelBased"
-    }
-  }
-}
-```
 
 ## 支持的族类型
 
@@ -361,38 +295,6 @@ Level nearestLevel = FamilyInstanceCreator.GetNearestLevel(doc, locationPoint.Z 
 - **handDirection**：手方向向量，定义族的X轴方向
 - 所有方向向量应为**归一化向量**（长度为1）
 
-## 最佳实践
-
-### 1. 参数获取建议流程
-
-```
-1. 调用 get_family_creation_suggestion 获取参数需求
-2. 根据返回的 requiredParameters 和 optionalParameters 构造请求
-3. 参考 examples 中的典型示例
-4. 调用 create_family_instance 创建实例
-```
-
-### 2. 错误处理
-
-// 错误响应示例
-```json
-{
-  "success": false,
-  "message": "OneLevelBased族必须指定locationPoint",
-  "response": {
-    "success": false,
-    "message": "OneLevelBased族必须指定locationPoint",
-    "elementId": -1
-  }
-}
-```
-
-### 3. 性能优化
-
-- 优先使用 `autoFindLevel` 和 `autoFindHost` 而非手动查找
-- 合理设置 `searchRadius` 避免过大的搜索范围
-- 对于重复创建，缓存标高和视图的 ElementId
-
 ## 注意事项
 
 ### 限制条件
@@ -452,6 +354,16 @@ Level nearestLevel = FamilyInstanceCreator.GetNearestLevel(doc, locationPoint.Z 
 - **依赖项**：RevitMCPSDK、Newtonsoft.Json
 
 ## 更新日志
+
+### v2.1.0 (2025-09-23)
+- 🔧 **优化AIResult.Message字段**：明确Response数据类型和含义，提升API文档清晰度
+- 🧹 **清理无用默认值**：删除FamilyCreationDefaults类，直接使用硬编码值保持一致性
+- 🏗️ **重构服务架构**：将默认值改为FamilyInstanceService静态属性，简化调用
+
+### v2.0.0 (2025-09-22)
+- 🚀 **族创建参数精简**：彻底优化参数建议格式，提升AI理解效率
+- 🔄 **重构双层架构**：完善Creator和Service职责分离
+- ⚡ **错误处理标准化**：统一异常抛出机制，改进错误信息质量
 
 ### v1.0.0
 - 初始版本

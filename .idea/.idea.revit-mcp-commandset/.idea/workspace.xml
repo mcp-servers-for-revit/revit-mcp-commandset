@@ -7,7 +7,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="" />
+    <list default="true" id="4cc9b141-bb6e-4e08-9932-1963fd0d4048" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Features/FamilyInstanceCreation/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/revit-mcp-commandset/Utils/FamilyCreation/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/revit-mcp-commandset/Utils/FamilyCreation/README.md" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,9 +23,6 @@
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5d1fac278432487394a8a835d5dc020e1a2aed0/b1/6b584fab/ElementFilter.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/revit-mcp-commandset/Features/ElementFilter/AIElementFilterCommand.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/revit-mcp-commandset/Utils/FamilyInstanceCreator.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://E:/工作文档/开发类/MyCode/Revit-MCP/revit-mcp-commandset/revit-mcp-commandset/Utils/ProjectUtils.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://diff.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
@@ -52,6 +53,11 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
+  <component name="RunAnythingCache">
+    <option name="myCommands">
+      <command value="int类型" />
+    </option>
+  </component>
   <component name="RunManager">
     <configuration name="RevitMCPCommandSet" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -88,7 +94,7 @@
       <workItem from="1758250431953" duration="6471000" />
       <workItem from="1758265425486" duration="4604000" />
       <workItem from="1758271564511" duration="5551000" />
-      <workItem from="1758508639263" duration="12893000" />
+      <workItem from="1758508639263" duration="21563000" />
     </task>
     <task id="LOCAL-00001" summary="存档：通用创建mcp命令创建前">
       <option name="closed" value="true" />
