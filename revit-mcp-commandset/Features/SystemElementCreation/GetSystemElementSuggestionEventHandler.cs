@@ -1,6 +1,7 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitMCPCommandSet.Models.Common;
+using RevitMCPCommandSet.Utils.SystemCreation;
 using RevitMCPSDK.API.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -15,14 +16,14 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
     public class GetSystemElementSuggestionEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
     {
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
-        private SystemElementType? _elementType;
+        private string _elementType;
         private int _typeId;
         private bool _returnAll;
         private AIResult<object> _result;
 
         public string GetName() => "GetSystemElementSuggestionEventHandler";
 
-        public void SetElementType(SystemElementType elementType)
+        public void SetElementType(string elementType)
         {
             _elementType = elementType;
             _typeId = 0;
@@ -55,13 +56,12 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                 if (_returnAll)
                 {
                     // 返回所有支持的系统族类型建议
-                    var allSuggestions = new List<SystemElementSuggestion>();
-                    foreach (SystemElementType type in Enum.GetValues(typeof(SystemElementType)))
+                    var allSuggestions = new List<FamilyCreationRequirements>();
+                    var supportedTypes = new[] { "wall", "floor" };
+
+                    foreach (var elementType in supportedTypes)
                     {
-                        if (type == SystemElementType.Wall || type == SystemElementType.Floor)
-                        {
-                            allSuggestions.Add(GenerateSuggestion(type, doc));
-                        }
+                        allSuggestions.Add(GenerateSuggestion(elementType, doc));
                     }
 
                     _result = new AIResult<object>
@@ -71,14 +71,24 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                         Response = allSuggestions
                     };
                 }
-                else if (_elementType.HasValue)
+                else if (!string.IsNullOrEmpty(_elementType))
                 {
                     // 根据元素类型返回建议
-                    var suggestion = GenerateSuggestion(_elementType.Value, doc);
+                    if (!SystemElementValidator.IsElementTypeSupported(_elementType))
+                    {
+                        _result = new AIResult<object>
+                        {
+                            Success = false,
+                            Message = $"不支持的系统族类型: {_elementType}。支持的类型：wall, floor"
+                        };
+                        return;
+                    }
+
+                    var suggestion = GenerateSuggestion(_elementType, doc);
                     _result = new AIResult<object>
                     {
                         Success = true,
-                        Message = $"获取{_elementType.Value}创建参数建议成功",
+                        Message = $"获取{SystemElementValidator.GetFriendlyName(_elementType)}创建参数建议成功",
                         Response = suggestion
                     };
                 }
@@ -88,8 +98,9 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                     var element = doc.GetElement(new ElementId(_typeId));
                     if (element is WallType)
                     {
-                        var suggestion = GenerateSuggestion(SystemElementType.Wall, doc);
-                        suggestion.Description += $"\n当前墙体类型: {element.Name}";
+                        var suggestion = GenerateSuggestion("wall", doc);
+                        suggestion.FamilyName = element.Name;
+                        suggestion.Message = $"当前墙体类型: {element.Name}";
                         _result = new AIResult<object>
                         {
                             Success = true,
@@ -99,8 +110,9 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                     }
                     else if (element is FloorType)
                     {
-                        var suggestion = GenerateSuggestion(SystemElementType.Floor, doc);
-                        suggestion.Description += $"\n当前楼板类型: {element.Name}";
+                        var suggestion = GenerateSuggestion("floor", doc);
+                        suggestion.FamilyName = element.Name;
+                        suggestion.Message = $"当前楼板类型: {element.Name}";
                         _result = new AIResult<object>
                         {
                             Success = true,
@@ -140,112 +152,245 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
             }
         }
 
-        private SystemElementSuggestion GenerateSuggestion(SystemElementType elementType, Document doc)
+        /// <summary>
+        /// 生成参数建议
+        /// </summary>
+        private FamilyCreationRequirements GenerateSuggestion(string elementType, Document doc)
         {
-            var suggestion = new SystemElementSuggestion
+            var suggestion = new FamilyCreationRequirements
             {
-                ElementType = elementType.ToString(),
-                Description = GetDescription(elementType),
-                RequiredParameters = GetRequiredParameters(elementType),
-                OptionalParameters = GetOptionalParameters(elementType),
-                Example = GetExample(elementType),
-                VersionNotes = "支持 Revit 2019-2025，其他系统族类型正在开发中",
-                CommonIssues = GetCommonIssues(elementType)
+                TypeId = 0, // 用户需要指定具体的类型ID
+                FamilyName = SystemElementValidator.GetFriendlyName(elementType),
+                Parameters = new Dictionary<string, ParameterInfo>()
             };
 
-            // 添加可用类型列表
-            if (elementType == SystemElementType.Wall)
+            // 添加通用必需参数
+            suggestion.Parameters["elementType"] = new ParameterInfo
             {
-                var wallTypes = new FilteredElementCollector(doc)
-                    .OfClass(typeof(WallType))
-                    .Cast<WallType>()
-                    .Where(wt => wt.Kind == WallKind.Basic)
-                    .Take(5)
-                    .Select(wt => new { id = wt.Id.IntegerValue, name = wt.Name })
-                    .ToList();
+                Type = "string",
+                Description = "系统族类型",
+                Example = elementType,
+                IsRequired = true
+            };
 
-                if (wallTypes.Any())
-                {
-                    suggestion.Description += $"\n\n可用墙体类型示例：\n" +
-                        string.Join("\n", wallTypes.Select(t => $"- ID: {t.id}, 名称: {t.name}"));
-                }
-            }
-            else if (elementType == SystemElementType.Floor)
+            suggestion.Parameters["typeId"] = new ParameterInfo
             {
-                var floorTypes = new FilteredElementCollector(doc)
-                    .OfClass(typeof(FloorType))
-                    .Cast<FloorType>()
-                    .Take(5)
-                    .Select(ft => new { id = ft.Id.IntegerValue, name = ft.Name })
-                    .ToList();
+                Type = "int",
+                Description = $"{SystemElementValidator.GetFriendlyName(elementType)}类型ID",
+                Example = GetTypeIdExample(elementType, doc),
+                IsRequired = true
+            };
 
-                if (floorTypes.Any())
-                {
-                    suggestion.Description += $"\n\n可用楼板类型示例：\n" +
-                        string.Join("\n", floorTypes.Select(t => $"- ID: {t.id}, 名称: {t.name}"));
-                }
+            // 添加通用可选参数
+            suggestion.Parameters["levelId"] = new ParameterInfo
+            {
+                Type = "int",
+                Description = "关联标高ID（可选，会自动查找）",
+                Example = GetLevelIdExample(doc),
+                IsRequired = false
+            };
+
+            suggestion.Parameters["autoFindLevel"] = new ParameterInfo
+            {
+                Type = "bool",
+                Description = "自动查找最近标高",
+                Example = true,
+                IsRequired = false
+            };
+
+            suggestion.Parameters["isStructural"] = new ParameterInfo
+            {
+                Type = "bool",
+                Description = "是否为结构构件",
+                Example = false,
+                IsRequired = false
+            };
+
+            // 根据类型添加特定参数
+            switch (elementType.ToLower())
+            {
+                case "wall":
+                    AddWallParameters(suggestion.Parameters);
+                    break;
+                case "floor":
+                    AddFloorParameters(suggestion.Parameters);
+                    break;
             }
+
+            // 添加可用类型列表到消息中
+            suggestion.Message = GetAvailableTypesInfo(elementType, doc);
 
             return suggestion;
         }
 
-        private string GetDescription(SystemElementType elementType)
+        /// <summary>
+        /// 添加墙体参数
+        /// </summary>
+        private void AddWallParameters(Dictionary<string, ParameterInfo> parameters)
         {
-            switch (elementType)
+            parameters["wallLine"] = new ParameterInfo
             {
-                case SystemElementType.Wall:
-                    return "墙体系统族：用于创建建筑墙体，支持直线墙和弧形墙";
-                case SystemElementType.Floor:
-                    return "楼板系统族：用于创建楼板，支持任意多边形轮廓";
-                default:
-                    return "系统族元素";
-            }
-        }
-
-        private Dictionary<string, SystemParameterInfo> GetRequiredParameters(SystemElementType elementType)
-        {
-            // 复用CreateSystemElementEventHandler中的逻辑
-            var handler = new CreateSystemElementEventHandler();
-            return handler.GetRequiredParameters(elementType);
-        }
-
-        private Dictionary<string, SystemParameterInfo> GetOptionalParameters(SystemElementType elementType)
-        {
-            // 复用CreateSystemElementEventHandler中的逻辑
-            var handler = new CreateSystemElementEventHandler();
-            return handler.GetOptionalParameters(elementType);
-        }
-
-        private object GetExample(SystemElementType elementType)
-        {
-            // 复用CreateSystemElementEventHandler中的逻辑
-            var handler = new CreateSystemElementEventHandler();
-            return handler.GetExampleParameters(elementType);
-        }
-
-        private List<string> GetCommonIssues(SystemElementType elementType)
-        {
-            var issues = new List<string>
-            {
-                "确保TypeId对应正确的系统族类型",
-                "所有坐标单位为毫米，系统会自动转换为Revit内部单位"
+                Type = "JZLine",
+                Description = "墙体路径线段（毫米）",
+                Example = new { p0 = new { x = 0, y = 0, z = 0 }, p1 = new { x = 5000, y = 0, z = 0 } },
+                IsRequired = true
             };
 
-            switch (elementType)
+            parameters["height"] = new ParameterInfo
             {
-                case SystemElementType.Wall:
-                    issues.Add("墙体路径不能为零长度");
-                    issues.Add("墙体高度必须大于0");
-                    issues.Add("自动连接功能可能影响相邻墙体");
-                    break;
-                case SystemElementType.Floor:
-                    issues.Add("楼板轮廓必须闭合且不能自交");
-                    issues.Add("至少需要3个点定义楼板边界");
-                    issues.Add("点的顺序决定楼板的法线方向");
-                    break;
-            }
+                Type = "double",
+                Description = "墙体高度（毫米）",
+                Example = 3000.0,
+                IsRequired = true
+            };
 
-            return issues;
+            parameters["baseOffset"] = new ParameterInfo
+            {
+                Type = "double",
+                Description = "底部偏移（毫米）",
+                Example = 0.0,
+                IsRequired = false
+            };
+
+            parameters["autoJoinWalls"] = new ParameterInfo
+            {
+                Type = "bool",
+                Description = "自动连接相邻墙体",
+                Example = true,
+                IsRequired = false
+            };
+        }
+
+        /// <summary>
+        /// 添加楼板参数
+        /// </summary>
+        private void AddFloorParameters(Dictionary<string, ParameterInfo> parameters)
+        {
+            parameters["floorBoundary"] = new ParameterInfo
+            {
+                Type = "JZPoint[]",
+                Description = "楼板边界点列表（毫米，按顺序连接）",
+                Example = new[]
+                {
+                    new { x = 0, y = 0, z = 0 },
+                    new { x = 5000, y = 0, z = 0 },
+                    new { x = 5000, y = 5000, z = 0 },
+                    new { x = 0, y = 5000, z = 0 }
+                },
+                IsRequired = true
+            };
+
+            parameters["topOffset"] = new ParameterInfo
+            {
+                Type = "double",
+                Description = "顶部偏移（毫米）",
+                Example = 0.0,
+                IsRequired = false
+            };
+
+            parameters["slope"] = new ParameterInfo
+            {
+                Type = "double",
+                Description = "楼板坡度（百分比，可选）",
+                Example = 2.0,
+                IsRequired = false
+            };
+        }
+
+        /// <summary>
+        /// 获取类型ID示例
+        /// </summary>
+        private int GetTypeIdExample(string elementType, Document doc)
+        {
+            try
+            {
+                switch (elementType.ToLower())
+                {
+                    case "wall":
+                        var wallType = new FilteredElementCollector(doc)
+                            .OfClass(typeof(WallType))
+                            .Cast<WallType>()
+                            .FirstOrDefault(wt => wt.Kind == WallKind.Basic);
+                        return wallType?.Id.IntegerValue ?? 123456;
+
+                    case "floor":
+                        var floorType = new FilteredElementCollector(doc)
+                            .OfClass(typeof(FloorType))
+                            .Cast<FloorType>()
+                            .FirstOrDefault();
+                        return floorType?.Id.IntegerValue ?? 234567;
+
+                    default:
+                        return 123456;
+                }
+            }
+            catch
+            {
+                return 123456; // 默认示例值
+            }
+        }
+
+        /// <summary>
+        /// 获取标高ID示例
+        /// </summary>
+        private int GetLevelIdExample(Document doc)
+        {
+            try
+            {
+                var level = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Level))
+                    .Cast<Level>()
+                    .FirstOrDefault();
+                return level?.Id.IntegerValue ?? 789;
+            }
+            catch
+            {
+                return 789; // 默认示例值
+            }
+        }
+
+        /// <summary>
+        /// 获取可用类型信息
+        /// </summary>
+        private string GetAvailableTypesInfo(string elementType, Document doc)
+        {
+            try
+            {
+                switch (elementType.ToLower())
+                {
+                    case "wall":
+                        var wallTypes = new FilteredElementCollector(doc)
+                            .OfClass(typeof(WallType))
+                            .Cast<WallType>()
+                            .Where(wt => wt.Kind == WallKind.Basic)
+                            .Take(5)
+                            .Select(wt => $"ID: {wt.Id.IntegerValue}, 名称: {wt.Name}")
+                            .ToList();
+
+                        return wallTypes.Any()
+                            ? $"可用墙体类型示例：\n{string.Join("\n", wallTypes)}"
+                            : "支持 Revit 2019-2025 版本";
+
+                    case "floor":
+                        var floorTypes = new FilteredElementCollector(doc)
+                            .OfClass(typeof(FloorType))
+                            .Cast<FloorType>()
+                            .Take(5)
+                            .Select(ft => $"ID: {ft.Id.IntegerValue}, 名称: {ft.Name}")
+                            .ToList();
+
+                        return floorTypes.Any()
+                            ? $"可用楼板类型示例：\n{string.Join("\n", floorTypes)}"
+                            : "支持 Revit 2019-2025 版本";
+
+                    default:
+                        return "支持 Revit 2019-2025 版本";
+                }
+            }
+            catch
+            {
+                return "支持 Revit 2019-2025 版本";
+            }
         }
 
         public bool WaitForCompletion(int timeoutMilliseconds = 5000)

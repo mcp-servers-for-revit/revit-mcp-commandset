@@ -1,6 +1,7 @@
 using Autodesk.Revit.DB;
 using RevitMCPCommandSet.Models.Common;
 using RevitMCPCommandSet.Models.Geometry;
+using RevitMCPCommandSet.Utils.SystemCreation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,14 +28,19 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
 
+            // 参数验证
+            var validationError = SystemElementValidator.ValidateParameters(parameters);
+            if (!string.IsNullOrEmpty(validationError))
+                throw new ArgumentException(validationError);
+
             // 验证版本兼容性
             CheckVersionCompatibility(parameters.ElementType);
 
-            switch (parameters.ElementType)
+            switch (parameters.ElementType.ToLower())
             {
-                case SystemElementType.Wall:
+                case "wall":
                     return CreateWall(parameters);
-                case SystemElementType.Floor:
+                case "floor":
                     return CreateFloor(parameters);
                 default:
                     throw new NotImplementedException($"系统族类型 {parameters.ElementType} 尚未实现");
@@ -48,11 +54,11 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
         /// </summary>
         private Wall CreateWall(SystemElementParameters parameters)
         {
-            // 验证参数
+            // 参数已经在Create方法中验证过，这里只做必要的检查
             if (parameters.WallLine == null)
                 throw new ArgumentException("墙体创建需要指定路径线段");
 
-            if (parameters.Height <= 0)
+            if (!parameters.Height.HasValue || parameters.Height.Value <= 0)
                 throw new ArgumentException("墙体高度必须大于0");
 
             // 获取墙体类型
@@ -69,7 +75,7 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
             var line = Line.CreateBound(startPoint, endPoint);
 
             // 转换高度和偏移（毫米转英尺）
-            double heightInFeet = parameters.Height / 304.8;
+            double heightInFeet = parameters.Height.Value / 304.8;
             double offsetInFeet = parameters.BaseOffset / 304.8;
 
             Wall wall = null;
@@ -279,9 +285,9 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
         private Level GetOrFindLevel(SystemElementParameters parameters)
         {
             // 如果指定了标高ID
-            if (parameters.LevelId > 0)
+            if (parameters.LevelId.HasValue && parameters.LevelId.Value > 0)
             {
-                var level = _document.GetElement(new ElementId(parameters.LevelId)) as Level;
+                var level = _document.GetElement(new ElementId(parameters.LevelId.Value)) as Level;
                 if (level != null) return level;
             }
 
@@ -331,7 +337,7 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
         /// <summary>
         /// 检查版本兼容性
         /// </summary>
-        private void CheckVersionCompatibility(SystemElementType elementType)
+        private void CheckVersionCompatibility(string elementType)
         {
 #if !REVIT2019 && !REVIT2020 && !REVIT2021 && !REVIT2022 && !REVIT2023 && !REVIT2024 && !REVIT2025
             throw new NotSupportedException(

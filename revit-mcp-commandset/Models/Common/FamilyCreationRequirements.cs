@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace RevitMCPCommandSet.Models.Common
 {
@@ -39,10 +40,28 @@ namespace RevitMCPCommandSet.Models.Common
     }
 
     /// <summary>
-    /// 参数信息（精简版）
+    /// 参数信息（扩展版）
     /// </summary>
     public class ParameterInfo
     {
+        /// <summary>
+        /// 参数类型
+        /// </summary>
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        /// <summary>
+        /// 参数说明（包含单位信息）
+        /// </summary>
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        /// <summary>
+        /// 示例值
+        /// </summary>
+        [JsonProperty("example")]
+        public object Example { get; set; }
+
         /// <summary>
         /// 是否为必需参数
         /// </summary>
@@ -50,9 +69,13 @@ namespace RevitMCPCommandSet.Models.Common
         public bool Required { get; set; }
 
         /// <summary>
-        /// 参数说明（包含单位信息）
+        /// 是否为必需参数（别名，为兼容新代码）
         /// </summary>
-        [JsonProperty("description")]
-        public string Description { get; set; }
+        [JsonIgnore]
+        public bool IsRequired
+        {
+            get => Required;
+            set => Required = value;
+        }
     }
 }

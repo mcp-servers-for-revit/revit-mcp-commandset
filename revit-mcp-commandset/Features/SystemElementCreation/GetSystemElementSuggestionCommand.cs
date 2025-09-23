@@ -40,18 +40,7 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                 if (elementTypeToken != null)
                 {
                     var elementTypeStr = elementTypeToken.ToString();
-                    if (Enum.TryParse<SystemElementType>(elementTypeStr, true, out var elementType))
-                    {
-                        _handler.SetElementType(elementType);
-                    }
-                    else
-                    {
-                        return new AIResult<object>
-                        {
-                            Success = false,
-                            Message = $"不支持的系统族类型: {elementTypeStr}"
-                        };
-                    }
+                    _handler.SetElementType(elementTypeStr);
                 }
                 // 尝试获取typeId
                 else if (dataToken["typeId"] != null)

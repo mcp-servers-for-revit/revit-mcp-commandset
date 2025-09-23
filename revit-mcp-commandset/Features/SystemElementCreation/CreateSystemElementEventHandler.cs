@@ -38,8 +38,8 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
             {
                 var doc = uiapp.ActiveUIDocument.Document;
 
-                // 参数验证
-                var validationError = ValidateParameters(_parameters);
+                // 参数验证 - 使用SystemElementValidator
+                var validationError = SystemElementValidator.ValidateParameters(_parameters);
                 if (!string.IsNullOrEmpty(validationError))
                 {
                     _result = new AIResult<object>
@@ -52,7 +52,7 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                 }
 
                 // 创建元素
-                using (Transaction trans = new Transaction(doc, $"创建{_parameters.ElementType}"))
+                using (Transaction trans = new Transaction(doc, $"创建{SystemElementValidator.GetFriendlyName(_parameters.ElementType)}"))
                 {
                     trans.Start();
 
@@ -67,7 +67,7 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
                         _result = new AIResult<object>
                         {
                             Success = true,
-                            Message = $"{_parameters.ElementType} 创建成功",
+                            Message = $"{SystemElementValidator.GetFriendlyName(_parameters.ElementType)} 创建成功",
                             Response = new
                             {
                                 elementId = element.Id.IntegerValue,
@@ -106,251 +106,146 @@ namespace RevitMCPCommandSet.Features.SystemElementCreation
         }
 
         /// <summary>
-        /// 验证参数
-        /// </summary>
-        private string ValidateParameters(SystemElementParameters parameters)
-        {
-            if (parameters == null)
-                return "参数不能为空";
-
-            if (parameters.TypeId <= 0)
-                return "必须指定有效的类型ID";
-
-            switch (parameters.ElementType)
-            {
-                case SystemElementType.Wall:
-                    if (parameters.WallLine == null)
-                        return "墙体创建需要指定路径线段（wallLine）";
-                    if (parameters.Height <= 0)
-                        return "墙体高度必须大于0";
-                    break;
-
-                case SystemElementType.Floor:
-                    if (parameters.FloorBoundary == null || parameters.FloorBoundary.Count < 3)
-                        return "楼板边界至少需要3个点";
-                    break;
-
-                default:
-                    return $"不支持的系统族类型: {parameters.ElementType}";
-            }
-
-            return null; // 验证通过
-        }
-
-        /// <summary>
         /// 生成参数建议
         /// </summary>
-        private SystemElementSuggestion GenerateSuggestion(SystemElementType elementType, string errorMessage)
+        private FamilyCreationRequirements GenerateSuggestion(string elementType, string errorMessage)
         {
-            var suggestion = new SystemElementSuggestion
+            var suggestion = new FamilyCreationRequirements
             {
-                ElementType = elementType.ToString(),
-                Description = GetElementTypeDescription(elementType),
-                RequiredParameters = GetRequiredParameters(elementType),
-                OptionalParameters = GetOptionalParameters(elementType),
-                Example = GetExampleParameters(elementType),
-                VersionNotes = "当前支持 Revit 2019-2025 版本",
-                CommonIssues = new List<string>
-                {
-                    $"当前错误: {errorMessage}",
-                    "确保类型ID对应正确的系统族类型",
-                    "所有坐标单位为毫米",
-                    "楼板轮廓必须闭合且不自交"
-                }
+                TypeId = 0, // 用户需要指定具体的类型ID
+                FamilyName = SystemElementValidator.GetFriendlyName(elementType),
+                Parameters = new Dictionary<string, ParameterInfo>(),
+                Message = $"当前错误: {errorMessage}"
             };
+
+            // 添加通用必需参数
+            suggestion.Parameters["elementType"] = new ParameterInfo
+            {
+                Type = "string",
+                Description = "系统族类型",
+                Example = elementType,
+                IsRequired = true
+            };
+
+            suggestion.Parameters["typeId"] = new ParameterInfo
+            {
+                Type = "int",
+                Description = $"{SystemElementValidator.GetFriendlyName(elementType)}类型ID",
+                Example = 123456,
+                IsRequired = true
+            };
+
+            // 添加通用可选参数
+            suggestion.Parameters["levelId"] = new ParameterInfo
+            {
+                Type = "int",
+                Description = "关联标高ID（可选，会自动查找）",
+                Example = 789,
+                IsRequired = false
+            };
+
+            suggestion.Parameters["autoFindLevel"] = new ParameterInfo
+            {
+                Type = "bool",
+                Description = "自动查找最近标高",
+                Example = true,
+                IsRequired = false
+            };
+
+            suggestion.Parameters["isStructural"] = new ParameterInfo
+            {
+                Type = "bool",
+                Description = "是否为结构构件",
+                Example = false,
+                IsRequired = false
+            };
+
+            // 根据类型添加特定参数
+            switch (elementType.ToLower())
+            {
+                case "wall":
+                    AddWallParameters(suggestion.Parameters);
+                    break;
+                case "floor":
+                    AddFloorParameters(suggestion.Parameters);
+                    break;
+            }
 
             return suggestion;
         }
 
         /// <summary>
-        /// 获取元素类型描述
+        /// 添加墙体参数
         /// </summary>
-        private string GetElementTypeDescription(SystemElementType elementType)
+        private void AddWallParameters(Dictionary<string, ParameterInfo> parameters)
         {
-            switch (elementType)
+            parameters["wallLine"] = new ParameterInfo
             {
-                case SystemElementType.Wall:
-                    return "创建墙体元素，支持直线墙、弧形墙";
-                case SystemElementType.Floor:
-                    return "创建楼板元素，支持任意多边形轮廓";
-                default:
-                    return "系统族元素";
-            }
-        }
-
-        /// <summary>
-        /// 获取必需参数
-        /// </summary>
-        public Dictionary<string, SystemParameterInfo> GetRequiredParameters(SystemElementType elementType)
-        {
-            var required = new Dictionary<string, SystemParameterInfo>
-            {
-                ["elementType"] = new SystemParameterInfo
-                {
-                    Type = "string",
-                    Description = "系统族类型（Wall/Floor）",
-                    Example = elementType.ToString()
-                },
-                ["typeId"] = new SystemParameterInfo
-                {
-                    Type = "int",
-                    Description = $"{elementType}Type的ElementId",
-                    Example = 123456
-                }
+                Type = "JZLine",
+                Description = "墙体路径线段（毫米）",
+                Example = new { p0 = new { x = 0, y = 0, z = 0 }, p1 = new { x = 5000, y = 0, z = 0 } },
+                IsRequired = true
             };
 
-            switch (elementType)
+            parameters["height"] = new ParameterInfo
             {
-                case SystemElementType.Wall:
-                    required["wallLine"] = new SystemParameterInfo
-                    {
-                        Type = "JZLine",
-                        Description = "墙体路径线段（毫米）",
-                        Example = new { p0 = new { x = 0, y = 0, z = 0 }, p1 = new { x = 5000, y = 0, z = 0 } }
-                    };
-                    required["height"] = new SystemParameterInfo
-                    {
-                        Type = "double",
-                        Description = "墙体高度（毫米）",
-                        Example = 3000,
-                        DefaultValue = 3000
-                    };
-                    break;
-
-                case SystemElementType.Floor:
-                    required["floorBoundary"] = new SystemParameterInfo
-                    {
-                        Type = "JZPoint[]",
-                        Description = "楼板边界点列表（毫米）",
-                        Example = new[]
-                        {
-                            new { x = 0, y = 0, z = 0 },
-                            new { x = 5000, y = 0, z = 0 },
-                            new { x = 5000, y = 5000, z = 0 },
-                            new { x = 0, y = 5000, z = 0 }
-                        }
-                    };
-                    break;
-            }
-
-            return required;
-        }
-
-        /// <summary>
-        /// 获取可选参数
-        /// </summary>
-        public Dictionary<string, SystemParameterInfo> GetOptionalParameters(SystemElementType elementType)
-        {
-            var optional = new Dictionary<string, SystemParameterInfo>
-            {
-                ["levelId"] = new SystemParameterInfo
-                {
-                    Type = "int",
-                    Description = "关联标高的ElementId",
-                    Example = 789
-                },
-                ["autoFindLevel"] = new SystemParameterInfo
-                {
-                    Type = "bool",
-                    Description = "自动查找最近标高",
-                    DefaultValue = true
-                }
+                Type = "double",
+                Description = "墙体高度（毫米）",
+                Example = 3000.0,
+                IsRequired = true
             };
 
-            switch (elementType)
+            parameters["baseOffset"] = new ParameterInfo
             {
-                case SystemElementType.Wall:
-                    optional["baseOffset"] = new SystemParameterInfo
-                    {
-                        Type = "double",
-                        Description = "底部偏移（毫米）",
-                        DefaultValue = 0
-                    };
-                    optional["isStructural"] = new SystemParameterInfo
-                    {
-                        Type = "bool",
-                        Description = "是否为结构墙",
-                        DefaultValue = false
-                    };
-                    optional["autoJoinWalls"] = new SystemParameterInfo
-                    {
-                        Type = "bool",
-                        Description = "自动连接相邻墙体",
-                        DefaultValue = true
-                    };
-                    break;
+                Type = "double",
+                Description = "底部偏移（毫米）",
+                Example = 0.0,
+                IsRequired = false
+            };
 
-                case SystemElementType.Floor:
-                    optional["topOffset"] = new SystemParameterInfo
-                    {
-                        Type = "double",
-                        Description = "顶部偏移（毫米）",
-                        DefaultValue = 0
-                    };
-                    optional["slope"] = new SystemParameterInfo
-                    {
-                        Type = "double",
-                        Description = "楼板坡度（百分比）",
-                        Example = 2.0
-                    };
-                    optional["isStructural"] = new SystemParameterInfo
-                    {
-                        Type = "bool",
-                        Description = "是否为结构楼板",
-                        DefaultValue = false
-                    };
-                    break;
-            }
-
-            return optional;
+            parameters["autoJoinWalls"] = new ParameterInfo
+            {
+                Type = "bool",
+                Description = "自动连接相邻墙体",
+                Example = true,
+                IsRequired = false
+            };
         }
 
         /// <summary>
-        /// 获取参数示例
+        /// 添加楼板参数
         /// </summary>
-        public object GetExampleParameters(SystemElementType elementType)
+        private void AddFloorParameters(Dictionary<string, ParameterInfo> parameters)
         {
-            switch (elementType)
+            parameters["floorBoundary"] = new ParameterInfo
             {
-                case SystemElementType.Wall:
-                    return new
-                    {
-                        elementType = "Wall",
-                        typeId = 123456,
-                        wallLine = new
-                        {
-                            p0 = new { x = 0, y = 0, z = 0 },
-                            p1 = new { x = 5000, y = 0, z = 0 }
-                        },
-                        height = 3000,
-                        levelId = 789,
-                        baseOffset = 0,
-                        isStructural = false,
-                        autoFindLevel = true,
-                        autoJoinWalls = true
-                    };
+                Type = "JZPoint[]",
+                Description = "楼板边界点列表（毫米，按顺序连接）",
+                Example = new[]
+                {
+                    new { x = 0, y = 0, z = 0 },
+                    new { x = 5000, y = 0, z = 0 },
+                    new { x = 5000, y = 5000, z = 0 },
+                    new { x = 0, y = 5000, z = 0 }
+                },
+                IsRequired = true
+            };
 
-                case SystemElementType.Floor:
-                    return new
-                    {
-                        elementType = "Floor",
-                        typeId = 234567,
-                        floorBoundary = new[]
-                        {
-                            new { x = 0, y = 0, z = 0 },
-                            new { x = 5000, y = 0, z = 0 },
-                            new { x = 5000, y = 5000, z = 0 },
-                            new { x = 0, y = 5000, z = 0 }
-                        },
-                        levelId = 789,
-                        topOffset = 0,
-                        isStructural = false,
-                        autoFindLevel = true
-                    };
+            parameters["topOffset"] = new ParameterInfo
+            {
+                Type = "double",
+                Description = "顶部偏移（毫米）",
+                Example = 0.0,
+                IsRequired = false
+            };
 
-                default:
-                    return null;
-            }
+            parameters["slope"] = new ParameterInfo
+            {
+                Type = "double",
+                Description = "楼板坡度（百分比，可选）",
+                Example = 2.0,
+                IsRequired = false
+            };
         }
 
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)

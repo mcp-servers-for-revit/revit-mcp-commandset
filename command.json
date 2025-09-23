@@ -67,6 +67,11 @@
       "commandName": "get_system_element_suggestion",
       "description": "Get parameter requirements for creating system family elements",
       "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "get_revit_status",
+      "description": "Get current Revit status and active project information",
+      "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
 }
