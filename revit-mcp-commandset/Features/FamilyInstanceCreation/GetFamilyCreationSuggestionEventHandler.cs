@@ -55,7 +55,7 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                     Result = new AIResult<FamilyCreationRequirements>
                     {
                         Success = false,
-                        Message = $"无效的族类型ID: {typeId}",
+                        Message = $"无效的族类型ID: {typeId}，Response为null",
                         Response = null
                     };
                 }
@@ -68,7 +68,7 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                     {
                         Success = true,
                         Response = requirements,
-                        Message = "成功获取族创建参数需求"
+                        Message = "成功获取族创建参数需求，Response包含FamilyCreationRequirements对象，详细说明了该族类型所需的创建参数"
                     };
                 }
             }

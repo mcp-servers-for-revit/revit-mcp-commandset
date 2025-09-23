@@ -80,7 +80,7 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                             Result = new AIResult<object>
                             {
                                 Success = false,
-                                Message = validation.ErrorMessage,
+                                Message = $"{validation.ErrorMessage}，Response包含FamilyCreationRequirements对象，提供完整的参数要求说明",
                                 Response = suggestion
                             };
                             return;
@@ -99,7 +99,7 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                         Result = new AIResult<object>
                         {
                             Success = true,
-                            Message = "族实例创建成功",
+                            Message = "族实例创建成功，Response包含新创建实例的ElementId",
                             Response = elementId
                         };
                     }
@@ -110,7 +110,7 @@ namespace RevitMCPCommandSet.Features.FamilyInstanceCreation
                         Result = new AIResult<object>
                         {
                             Success = false,
-                            Message = $"创建失败: {ex.Message}",
+                            Message = $"创建失败: {ex.Message}，Response包含FamilyCreationRequirements对象，提供参数修正建议",
                             Response = suggestion
                         };
                     }
