@@ -39,7 +39,7 @@ namespace RevitMCPCommandSet.Features.RevitStatus
                 var statusInfo = new RevitStatusInfo();
 
                 // 获取Revit版本信息
-                statusInfo.RevitVersion = app.VersionName + " " + app.VersionNumber;
+                statusInfo.RevitVersion = app.VersionName;
 
                 // 检查是否有活动文档
                 statusInfo.HasActiveDocument = uiDoc != null;
