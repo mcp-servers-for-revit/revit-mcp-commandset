@@ -4,8 +4,6 @@
 
 | 命令名称                        | 功能描述 | 预估实现模块 | 核心需求 |
 |-----------------------------|---------|-------------|----------|
-| `create_system_families`    | 系统族元素智能创建 | `Features/SystemElementCreation/` | 几何路径创建墙体、轮廓创建楼板屋顶、管道系统路径创建、连接点集成 |
-| `get_revit_status`          | Revit应用程序状态获取 | `Features/RevitStatus/` | 文档视图信息、项目状态、界面状态检测 |
 | `get_element_geometry_info` | 项目指定几何信息获取 | `Features/ElementGeometry/` | 可配置元素类型、指定几何信息提取、批量几何数据收集 |
 
 ## 中优先级命令 (Medium Priority) ⭐⭐⭐⭐
