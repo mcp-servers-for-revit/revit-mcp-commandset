@@ -27,9 +27,9 @@ namespace RevitMCPCommandSet.Features.UnifiedCommands.Models
         public double BaseOffset { get; set; } = 0;
 
         /// <summary>
-        /// 自动连接相邻墙体 - 可选
+        /// 墙体厚度（毫米）- 可选，如果不指定则使用类型默认厚度
         /// </summary>
-        [JsonProperty("autoJoinWalls")]
-        public bool AutoJoinWalls { get; set; } = true;
+        [JsonProperty("thickness")]
+        public double? Thickness { get; set; }
     }
 }

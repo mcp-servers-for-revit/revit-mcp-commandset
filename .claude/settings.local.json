@@ -4,7 +4,11 @@
       "mcp__ide__getDiagnostics",
       "mcp__revit-mcp__ai_element_filter",
       "mcp__revit-mcp__get_family_creation_suggestion",
-      "mcp__revit-mcp__create_family_instance"
+      "mcp__revit-mcp__create_family_instance",
+      "mcp__revit-mcp__get_revit_status",
+      "mcp__revit-mcp__create_element",
+      "mcp__revit-mcp__get_element_creation_suggestion",
+      "mcp__revit-mcp__operate_element"
     ],
     "deny": [],
     "ask": []

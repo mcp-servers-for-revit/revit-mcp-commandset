@@ -22,9 +22,9 @@ namespace RevitMCPCommandSet.Features.UnifiedCommands.Models
         public double TopOffset { get; set; } = 0;
 
         /// <summary>
-        /// 楼板坡度（可选，默认为null表示水平楼板）- 可选
+        /// 楼板厚度（毫米）- 可选，如果不指定则使用类型默认厚度
         /// </summary>
-        [JsonProperty("slope")]
-        public double? Slope { get; set; }
+        [JsonProperty("thickness")]
+        public double? Thickness { get; set; }
     }
 }

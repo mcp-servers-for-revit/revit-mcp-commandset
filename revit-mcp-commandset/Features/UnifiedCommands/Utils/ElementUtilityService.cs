@@ -257,13 +257,6 @@ namespace RevitMCPCommandSet.Features.UnifiedCommands.Utils
                 }
             }
 
-            // 检查坡度值
-            if (parameters.FloorParameters.Slope.HasValue)
-            {
-                if (parameters.FloorParameters.Slope.Value < -45 || parameters.FloorParameters.Slope.Value > 45)
-                    return "楼板坡度应在-45%到45%之间";
-            }
-
             return null; // 验证通过
         }
 

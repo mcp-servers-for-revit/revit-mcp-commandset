@@ -164,6 +164,61 @@ public class YourEventHandler : IExternalEventHandler, IWaitableExternalEventHan
 
 ### 2. 数据模型设计
 
+#### JsonProperty 数据结构一致性规范 🔴 **重要**
+**强制要求**：Revit 端 JsonProperty 属性名必须与服务端 Zod schema 完全一致
+
+```csharp
+// ❌ 错误示例：与服务端不一致
+public class FloorSpecificParameters
+{
+    [JsonProperty("points")]  // 错误：服务端使用 boundary
+    public List<JZPoint> Boundary { get; set; }
+}
+
+// ✅ 正确示例：与服务端保持一致
+public class FloorSpecificParameters
+{
+    [JsonProperty("boundary")]  // 正确：与服务端 Zod schema 一致
+    public List<JZPoint> Boundary { get; set; }
+}
+```
+
+#### JsonProperty 使用规范
+1. **属性命名**：JsonProperty 值必须使用 camelCase（如：`"elementId"`、`"locationPoint"`）
+2. **命名一致性**：JsonProperty 值与服务端 Zod schema 属性名完全匹配
+3. **嵌套对象**：复杂对象的所有层级都要保持命名一致
+4. **数组元素**：数组元素类型的 JsonProperty 也要匹配
+
+```csharp
+// 标准 JsonProperty 示例
+public class WallSpecificParameters
+{
+    [JsonProperty("line")]
+    public JZLine Line { get; set; }
+
+    [JsonProperty("height")]
+    public double Height { get; set; }
+
+    [JsonProperty("offset")]
+    public double BaseOffset { get; set; } = 0;
+}
+
+// 对应服务端 Zod schema
+wallParameters: z.object({
+  line: z.object({...}),
+  height: z.number(),
+  offset: z.number().default(0)
+})
+```
+
+#### 与服务端同步检查清单
+修改数据模型时必须检查：
+- [ ] JsonProperty 属性名与服务端 Zod schema 一致
+- [ ] 嵌套对象的所有层级属性名都匹配
+- [ ] 数组元素的属性结构完全对应
+- [ ] 可选属性在两端声明一致
+- [ ] 默认值设置保持同步
+
 #### 统一返回格式
 ```csharp
 public class AIResult<T>
@@ -292,6 +347,22 @@ A: 首先检查是否有 "data" 包裹层，然后检查 JSON 结构是否与数
 
 **Q: 新增功能模块后如何组织代码？**
 A: 在 Features 下创建新目录，将相关的 Command 和 EventHandler 放在一起，保持功能内聚。
+
+**Q: 数据结构不一致导致参数反序列化失败怎么办？** 🔴 **重要**
+A: 这是最常见的集成问题，按以下步骤排查：
+1. **检查 JsonProperty**：确认 `[JsonProperty("属性名")]` 与服务端 Zod schema 属性名完全一致
+2. **验证嵌套结构**：复杂对象的所有层级 JsonProperty 都要匹配
+3. **测试反序列化**：在 EventHandler 中打印接收到的 JSON 和反序列化后的对象
+4. **对比定义**：对比服务端 `src/tools/*.ts` 和本端 `Features/*/Models/*.cs` 的参数定义
+5. **检查属性类型**：确保 C# 属性类型与 TypeScript 类型兼容
+
+**Q: 如何避免数据结构不一致问题？**
+A: 遵循以下开发规范：
+1. **修改前核对**：修改 JsonProperty 前，先查看服务端对应的 Zod schema
+2. **统一命名约定**：严格使用 camelCase 作为 JsonProperty 值
+3. **同步修改**：任一端修改数据结构时，同步更新另一端
+4. **定期验证**：定期进行端到端测试验证数据传输正确性
+5. **文档更新**：结构变更后及时更新相关文档
 
 ---
 

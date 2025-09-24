@@ -64,9 +64,19 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
                 throw new ArgumentException("墙体高度必须大于0");
 
             // 获取墙体类型
-            var wallType = _document.GetElement(new ElementId(parameters.TypeId)) as WallType;
-            if (wallType == null)
-                throw new ArgumentException($"无效的墙体类型ID: {parameters.TypeId}");
+            WallType wallType;
+            if (parameters.WallParameters.Thickness.HasValue && parameters.WallParameters.Thickness.Value > 0)
+            {
+                // 使用指定厚度获取或创建墙体类型
+                wallType = GetOrCreateWallType(parameters.TypeId, parameters.WallParameters.Thickness.Value);
+            }
+            else
+            {
+                // 使用原始类型
+                wallType = _document.GetElement(new ElementId(parameters.TypeId)) as WallType;
+                if (wallType == null)
+                    throw new ArgumentException($"无效的墙体类型ID: {parameters.TypeId}");
+            }
 
             // 获取或查找标高
             Level level = GetOrFindLevel(parameters);
@@ -98,65 +108,7 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
             throw new NotSupportedException("当前Revit版本不支持");
 #endif
 
-            // 自动连接相邻墙体
-            if (parameters.WallParameters.AutoJoinWalls && wall != null)
-            {
-                JoinNearbyWalls(wall);
-            }
-
             return wall;
-        }
-
-        /// <summary>
-        /// 自动连接相邻墙体
-        /// </summary>
-        private void JoinNearbyWalls(Wall newWall)
-        {
-            try
-            {
-                // 获取墙体的位置线
-                var locationCurve = newWall.Location as LocationCurve;
-                if (locationCurve == null) return;
-
-                var wallLine = locationCurve.Curve;
-                var startPoint = wallLine.GetEndPoint(0);
-                var endPoint = wallLine.GetEndPoint(1);
-
-                // 查找相邻墙体
-                var collector = new FilteredElementCollector(_document)
-                    .OfClass(typeof(Wall))
-                    .WhereElementIsNotElementType();
-
-                foreach (Wall otherWall in collector)
-                {
-                    if (otherWall.Id == newWall.Id) continue;
-
-                    var otherLocation = otherWall.Location as LocationCurve;
-                    if (otherLocation == null) continue;
-
-                    var otherLine = otherLocation.Curve;
-                    var otherStart = otherLine.GetEndPoint(0);
-                    var otherEnd = otherLine.GetEndPoint(1);
-
-                    // 检查端点是否接近（容差1mm = 0.00328英尺）
-                    double tolerance = 0.00328;
-                    bool shouldJoin =
-                        startPoint.IsAlmostEqualTo(otherStart, tolerance) ||
-                        startPoint.IsAlmostEqualTo(otherEnd, tolerance) ||
-                        endPoint.IsAlmostEqualTo(otherStart, tolerance) ||
-                        endPoint.IsAlmostEqualTo(otherEnd, tolerance);
-
-                    if (shouldJoin && !JoinGeometryUtils.AreElementsJoined(_document, newWall, otherWall))
-                    {
-                        JoinGeometryUtils.JoinGeometry(_document, newWall, otherWall);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // 连接失败不影响墙体创建
-                System.Diagnostics.Trace.WriteLine($"自动连接墙体失败: {ex.Message}");
-            }
         }
 
         #endregion
@@ -173,9 +125,19 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
                 throw new ArgumentException("楼板边界至少需要3个点");
 
             // 获取楼板类型
-            var floorType = _document.GetElement(new ElementId(parameters.TypeId)) as FloorType;
-            if (floorType == null)
-                throw new ArgumentException($"无效的楼板类型ID: {parameters.TypeId}");
+            FloorType floorType;
+            if (parameters.FloorParameters.Thickness.HasValue && parameters.FloorParameters.Thickness.Value > 0)
+            {
+                // 使用指定厚度获取或创建楼板类型
+                floorType = GetOrCreateFloorType(parameters.TypeId, parameters.FloorParameters.Thickness.Value);
+            }
+            else
+            {
+                // 使用原始类型
+                floorType = _document.GetElement(new ElementId(parameters.TypeId)) as FloorType;
+                if (floorType == null)
+                    throw new ArgumentException($"无效的楼板类型ID: {parameters.TypeId}");
+            }
 
             // 获取或查找标高
             Level level = GetOrFindLevel(parameters);
@@ -231,13 +193,6 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
                 }
             }
 #endif
-
-            // 设置坡度（如果指定）
-            if (parameters.FloorParameters.Slope.HasValue && floor != null)
-            {
-                SetFloorSlope(floor, parameters.FloorParameters.Slope.Value);
-            }
-
             return floor;
         }
 
@@ -278,6 +233,157 @@ namespace RevitMCPCommandSet.Utils.SystemCreation
         #endregion
 
         #region 辅助方法
+
+        /// <summary>
+        /// 获取或创建指定厚度的墙体类型
+        /// </summary>
+        /// <param name="baseTypeId">基础墙体类型ID</param>
+        /// <param name="thicknessInMM">目标厚度（毫米）</param>
+        /// <returns>符合厚度要求的墙体类型</returns>
+        private WallType GetOrCreateWallType(int baseTypeId, double thicknessInMM)
+        {
+            // 获取基础墙体类型
+            var baseType = _document.GetElement(new ElementId(baseTypeId)) as WallType;
+            if (baseType == null)
+                throw new ArgumentException($"无效的墙体类型ID: {baseTypeId}");
+
+            // 转换厚度单位
+            double thicknessInFeet = thicknessInMM / 304.8;
+
+            // 检查当前类型厚度是否满足要求
+            var currentStructure = baseType.GetCompoundStructure();
+            if (currentStructure != null)
+            {
+                double currentThickness = currentStructure.GetWidth();
+                // 允许1mm的误差
+                if (Math.Abs(currentThickness - thicknessInFeet) < 1.0 / 304.8)
+                {
+                    return baseType; // 直接使用原类型
+                }
+            }
+
+            // 查找是否已存在指定厚度的墙体类型
+            string targetName = $"{baseType.Name}_{thicknessInMM}mm";
+            var existingType = new FilteredElementCollector(_document)
+                .OfClass(typeof(WallType))
+                .Cast<WallType>()
+                .FirstOrDefault(w => w.Name == targetName);
+
+            if (existingType != null)
+                return existingType;
+
+            // 创建新的墙体类型
+            var newWallType = baseType.Duplicate(targetName) as WallType;
+            if (newWallType == null)
+                throw new InvalidOperationException("复制墙体类型失败");
+
+            // 修改墙体厚度
+            var newStructure = newWallType.GetCompoundStructure();
+            if (newStructure != null)
+            {
+                // 获取原始层的材料ID
+                var layers = newStructure.GetLayers();
+                if (layers.Count > 0)
+                {
+                    ElementId materialId = layers.First().MaterialId;
+
+                    // 创建新的单层结构
+                    var newLayer = new CompoundStructureLayer(
+                        thicknessInFeet,
+                        MaterialFunctionAssignment.Structure,
+                        materialId
+                    );
+
+                    // 设置新的复合结构
+                    IList<CompoundStructureLayer> newLayers = new List<CompoundStructureLayer> { newLayer };
+                    newStructure.SetLayers(newLayers);
+
+                    // 应用新的复合结构
+                    newWallType.SetCompoundStructure(newStructure);
+                }
+            }
+
+            return newWallType;
+        }
+
+        /// <summary>
+        /// 获取或创建指定厚度的楼板类型
+        /// </summary>
+        /// <param name="baseTypeId">基础楼板类型ID</param>
+        /// <param name="thicknessInMM">目标厚度（毫米）</param>
+        /// <returns>符合厚度要求的楼板类型</returns>
+        private FloorType GetOrCreateFloorType(int baseTypeId, double thicknessInMM)
+        {
+            // 获取基础楼板类型
+            var baseType = _document.GetElement(new ElementId(baseTypeId)) as FloorType;
+            if (baseType == null)
+                throw new ArgumentException($"无效的楼板类型ID: {baseTypeId}");
+
+            // 转换厚度单位
+            double thicknessInFeet = thicknessInMM / 304.8;
+
+            // 检查当前类型厚度是否满足要求
+            var currentStructure = baseType.GetCompoundStructure();
+            if (currentStructure != null)
+            {
+                double currentThickness = currentStructure.GetWidth();
+                // 允许1mm的误差
+                if (Math.Abs(currentThickness - thicknessInFeet) < 1.0 / 304.8)
+                {
+                    return baseType; // 直接使用原类型
+                }
+            }
+
+            // 查找是否已存在指定厚度的楼板类型
+            string targetName = $"{baseType.Name}_{thicknessInMM}mm";
+            var existingType = new FilteredElementCollector(_document)
+                .OfClass(typeof(FloorType))
+                .Cast<FloorType>()
+                .FirstOrDefault(f => f.Name == targetName);
+
+            if (existingType != null)
+                return existingType;
+
+            // 创建新的楼板类型
+            var newFloorType = baseType.Duplicate(targetName) as FloorType;
+            if (newFloorType == null)
+                throw new InvalidOperationException("复制楼板类型失败");
+
+            // 修改楼板厚度
+            var newStructure = newFloorType.GetCompoundStructure();
+            if (newStructure != null)
+            {
+                // 获取所有层
+                var layers = newStructure.GetLayers();
+                if (layers.Count > 0)
+                {
+                    // 如果只有一层，直接设置厚度
+                    if (layers.Count == 1)
+                    {
+                        newStructure.SetLayerWidth(0, thicknessInFeet);
+                    }
+                    else
+                    {
+                        // 多层情况：保持第一层（通常是主结构层）为目标厚度，删除其他层
+                        var mainLayer = layers[0];
+                        var newLayer = new CompoundStructureLayer(
+                            thicknessInFeet,
+                            mainLayer.Function,
+                            mainLayer.MaterialId
+                        );
+
+                        // 设置新的单层结构
+                        IList<CompoundStructureLayer> newLayers = new List<CompoundStructureLayer> { newLayer };
+                        newStructure.SetLayers(newLayers);
+                    }
+
+                    // 应用新的复合结构
+                    newFloorType.SetCompoundStructure(newStructure);
+                }
+            }
+
+            return newFloorType;
+        }
 
         /// <summary>
         /// 获取或自动查找标高
