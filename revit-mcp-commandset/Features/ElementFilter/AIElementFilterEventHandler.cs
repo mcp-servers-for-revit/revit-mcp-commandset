@@ -41,6 +41,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
         public void SetParameters(FilterSetting data)
         {
             FilterSetting = data;
+            MissingElementIds = null; // 重置缺失元素列表
             _resetEvent.Reset();
         }
 
@@ -628,6 +629,17 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                         geometryData["isFacingFlipped"] = familyInstance.FacingFlipped;
                     }
                 }
+
+                // 获取宿主元素标高
+                if (familyInstance.Host != null)
+                {
+                    var hostLevel = GetElementLevel(doc, familyInstance.Host);
+                    if (hostLevel != null)
+                    {
+                        geometryData["hostLevelId"] = hostLevel.Id;
+                        geometryData["hostLevelName"] = hostLevel.Name;
+                    }
+                }
             }
 
             // 对于线性元素，获取线信息
@@ -644,6 +656,83 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                 // 获取曲线方向
                 XYZ direction = (curve.GetEndPoint(1) - curve.GetEndPoint(0)).Normalize();
                 geometryData["curveDirection"] = new { x = direction.X, y = direction.Y, z = direction.Z };
+            }
+
+            // 添加面元素的几何信息（墙、楼板、屋顶等）
+            if (settings.GeometryOptions == null || settings.GeometryOptions.CalculateDetailedGeometry)
+            {
+                // 获取厚度信息
+                var thicknessInfo = GetThicknessInfo(element);
+                if (thicknessInfo != null)
+                {
+                    geometryData["thickness"] = thicknessInfo;
+                }
+
+                // 对于楼板、屋顶等面元素
+                if (element is Floor floor)
+                {
+                    // 获取坡度
+                    Parameter slopeParam = floor.get_Parameter(BuiltInParameter.ROOF_SLOPE);
+                    if (slopeParam != null && slopeParam.HasValue)
+                    {
+                        geometryData["slope"] = slopeParam.AsDouble();
+                    }
+
+                    // 尝试获取面积
+                    Parameter areaParam = floor.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED);
+                    if (areaParam != null && areaParam.HasValue)
+                    {
+                        geometryData["area"] = areaParam.AsDouble() * 304.8 * 304.8; // 转换为平方毫米
+                    }
+
+                    // 尝试获取周长
+                    Parameter perimeterParam = floor.get_Parameter(BuiltInParameter.HOST_PERIMETER_COMPUTED);
+                    if (perimeterParam != null && perimeterParam.HasValue)
+                    {
+                        geometryData["perimeter"] = perimeterParam.AsDouble() * 304.8; // 转换为毫米
+                    }
+                }
+                else if (element is Wall wall)
+                {
+                    // 获取墙体面积
+                    Parameter areaParam = wall.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED);
+                    if (areaParam != null && areaParam.HasValue)
+                    {
+                        geometryData["area"] = areaParam.AsDouble() * 304.8 * 304.8;
+                    }
+
+                    // 获取墙体长度
+                    Parameter lengthParam = wall.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH);
+                    if (lengthParam != null && lengthParam.HasValue)
+                    {
+                        geometryData["length"] = lengthParam.AsDouble() * 304.8;
+                    }
+
+                    // 获取墙体高度
+                    Parameter heightParam = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM);
+                    if (heightParam != null && heightParam.HasValue)
+                    {
+                        geometryData["height"] = heightParam.AsDouble() * 304.8;
+                    }
+                }
+#if REVIT2021_OR_GREATER
+                else if (element is Ceiling ceiling)
+                {
+                    // 获取天花板面积
+                    Parameter areaParam = ceiling.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED);
+                    if (areaParam != null && areaParam.HasValue)
+                    {
+                        geometryData["area"] = areaParam.AsDouble() * 304.8 * 304.8;
+                    }
+
+                    // 获取天花板周长
+                    Parameter perimeterParam = ceiling.get_Parameter(BuiltInParameter.HOST_PERIMETER_COMPUTED);
+                    if (perimeterParam != null && perimeterParam.HasValue)
+                    {
+                        geometryData["perimeter"] = perimeterParam.AsDouble() * 304.8;
+                    }
+                }
+#endif
             }
 
             // 合并基础信息和几何信息
@@ -743,41 +832,196 @@ namespace RevitMCPCommandSet.Features.ElementFilter
         /// </summary>
         private static object BuildFullInfo(Document doc, Element element, FilterSetting settings)
         {
-            // 使用原有的 CreateElementFullInfo 方法的逻辑
-            // 但根据新的设置进行调整
-            if (element?.Category?.HasMaterialQuantities ?? false)
+            // 创建一个综合的字典来存放所有信息
+            var fullInfo = new Dictionary<string, object>();
+
+            // 1. 添加基础信息
+            var basicInfo = BuildBasicInfo(doc, element);
+            foreach (var prop in basicInfo.GetType().GetProperties())
             {
-                return CreateElementFullInfo(doc, element);
+                fullInfo[prop.Name] = prop.GetValue(basicInfo);
             }
-            else if (element is ElementType elementType)
+
+            // 2. 添加几何信息
+            var geoSettings = settings ?? new FilterSetting();
+            if (geoSettings.GeometryOptions == null)
             {
-                return CreateTypeFullInfo(doc, elementType);
+                geoSettings.GeometryOptions = new GeometryOptions
+                {
+                    CalculateDetailedGeometry = true,
+                    IncludeHandOrientation = true,
+                    IncludeFacingOrientation = true,
+                    IncludeIsHandFlipped = true,
+                    IncludeIsFacingFlipped = true
+                };
             }
-            else if (IsPositioningElement(element))
+            var geometryInfo = BuildGeometryInfo(doc, element, geoSettings);
+            if (geometryInfo is Dictionary<string, object> geoDict)
             {
-                return CreatePositioningElementInfo(doc, element);
+                foreach (var kvp in geoDict)
+                {
+                    if (!fullInfo.ContainsKey(kvp.Key))
+                    {
+                        fullInfo[kvp.Key] = kvp.Value;
+                    }
+                }
             }
-            else if (IsSpatialElement(element))
+
+            // 3. 添加参数信息
+            var paramOptions = settings?.ParameterOptions ?? new ParameterOptions
             {
-                return CreateSpatialElementInfo(doc, element);
-            }
-            else if (element is View view)
+                Scope = "Both",
+                FilterMode = "None",
+                ReturnFormat = "Separated"
+            };
+            var parameters = ExtractParameters(element, paramOptions);
+            fullInfo["instanceParameters"] = parameters["instanceParameters"];
+            fullInfo["typeParameters"] = parameters["typeParameters"];
+
+            // 4. 添加额外的Full级别字段
+
+            // 视图状态
+            if (doc.ActiveView != null)
             {
-                return CreateViewInfo(doc, view);
+                var viewStates = new List<object>();
+                bool isHidden = element.IsHidden(doc.ActiveView);
+                // IsHiddenTemporary 方法可能不存在于所有版本，使用条件编译或忽略
+                bool isTemporary = false;
+#if REVIT2023_OR_GREATER
+                // isTemporary = element.IsHiddenTemporary(doc.ActiveView);
+#endif
+
+                viewStates.Add(new
+                {
+                    viewId = doc.ActiveView.Id.IntegerValue,
+                    viewName = doc.ActiveView.Name,
+                    isHidden = isHidden,
+                    isTemporarilyHidden = isTemporary
+                });
+                fullInfo["viewStates"] = viewStates;
             }
-            else if (IsAnnotationElement(element))
+
+            // 所有者视图（对于视图特定元素）
+            Parameter ownerViewParam = element.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM);
+            if (ownerViewParam != null && ownerViewParam.HasValue)
             {
-                return CreateAnnotationInfo(doc, element);
+                ElementId ownerViewId = ownerViewParam.AsElementId();
+                if (ownerViewId != ElementId.InvalidElementId)
+                {
+                    fullInfo["ownerViewId"] = ownerViewId.IntegerValue;
+                    Element ownerView = doc.GetElement(ownerViewId);
+                    if (ownerView != null)
+                    {
+                        fullInfo["ownerViewName"] = ownerView.Name;
+                    }
+                }
             }
-            else if (IsGroupOrLinkElement(element))
+
+            // 工作集
+            if (element.WorksetId != null && element.WorksetId != WorksetId.InvalidWorksetId)
             {
-                return CreateGroupOrLinkInfo(doc, element);
+                fullInfo["worksetId"] = element.WorksetId.IntegerValue;
+#if REVIT2022_OR_GREATER
+                WorksetTable worksetTable = doc.GetWorksetTable();
+                if (worksetTable != null)
+                {
+                    Workset workset = worksetTable.GetWorkset(element.WorksetId);
+                    if (workset != null)
+                    {
+                        fullInfo["worksetName"] = workset.Name;
+                    }
+                }
+#endif
             }
-            else
+
+            // 设计选项
+            if (element.DesignOption != null && element.DesignOption.Id != ElementId.InvalidElementId)
             {
-                // 对于未识别的元素类型，返回基础信息
-                return BuildBasicInfo(doc, element);
+                fullInfo["designOptionId"] = element.DesignOption.Id.IntegerValue;
+                fullInfo["designOptionName"] = element.DesignOption.Name;
             }
+
+            // 阶段信息
+            Parameter phaseCreatedParam = element.get_Parameter(BuiltInParameter.PHASE_CREATED);
+            if (phaseCreatedParam != null && phaseCreatedParam.HasValue)
+            {
+                ElementId phaseId = phaseCreatedParam.AsElementId();
+                if (phaseId != ElementId.InvalidElementId)
+                {
+                    fullInfo["phaseCreatedId"] = phaseId.IntegerValue;
+                    Element phase = doc.GetElement(phaseId);
+                    if (phase != null)
+                    {
+                        fullInfo["phaseCreatedName"] = phase.Name;
+                    }
+                }
+            }
+
+            Parameter phaseDemolishedParam = element.get_Parameter(BuiltInParameter.PHASE_DEMOLISHED);
+            if (phaseDemolishedParam != null && phaseDemolishedParam.HasValue)
+            {
+                ElementId phaseId = phaseDemolishedParam.AsElementId();
+                if (phaseId != ElementId.InvalidElementId)
+                {
+                    fullInfo["phaseDemolishedId"] = phaseId.IntegerValue;
+                    Element phase = doc.GetElement(phaseId);
+                    if (phase != null)
+                    {
+                        fullInfo["phaseDemolishedName"] = phase.Name;
+                    }
+                }
+            }
+
+            // 可选：材料信息
+            if (element is FamilyInstance fi)
+            {
+                var materials = new List<object>();
+                foreach (ElementId matId in fi.GetMaterialIds(false))
+                {
+                    Material mat = doc.GetElement(matId) as Material;
+                    if (mat != null)
+                    {
+                        materials.Add(new
+                        {
+                            id = mat.Id.IntegerValue,
+                            name = mat.Name,
+                            category = mat.MaterialCategory,
+                            color = mat.Color != null ? new { r = mat.Color.Red, g = mat.Color.Green, b = mat.Color.Blue } : null
+                        });
+                    }
+                }
+                if (materials.Count > 0)
+                {
+                    fullInfo["materials"] = materials;
+                }
+
+                // 宿主元素ID
+                if (fi.Host != null)
+                {
+                    fullInfo["hostElementId"] = fi.Host.Id.IntegerValue;
+                    fullInfo["hostElementName"] = fi.Host.Name;
+                }
+            }
+
+            // 可选：连接的元素（针对墙、梁等结构元素）
+            if (element is Wall wallElem)
+            {
+                var connectedElements = new List<int>();
+
+                // 获取连接的墙
+                ICollection<ElementId> joinedWalls = JoinGeometryUtils.GetJoinedElements(doc, wallElem);
+                foreach (ElementId id in joinedWalls)
+                {
+                    connectedElements.Add(id.IntegerValue);
+                }
+
+                if (connectedElements.Count > 0)
+                {
+                    fullInfo["connectedElements"] = connectedElements;
+                }
+            }
+
+            return fullInfo;
         }
 
         /// <summary>
@@ -793,44 +1037,148 @@ namespace RevitMCPCommandSet.Features.ElementFilter
 
             var result = new Dictionary<string, object>();
 
-            // 根据字段列表选择性构建信息
+            // 分类字段请求
+            var basicFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var geometryFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var parameterFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var specificParams = new List<string>();
+
             foreach (string field in settings.IncludeFields)
             {
-                switch (field.ToLower())
+                string fieldLower = field.ToLower();
+
+                // 解析层级字段
+                if (fieldLower.StartsWith("geometry."))
                 {
-                    case "elementid":
-                        result["elementId"] = element.Id.IntegerValue;
-                        break;
-                    case "uniqueid":
-                        result["uniqueId"] = element.UniqueId;
-                        break;
-                    case "name":
-                        result["name"] = element.Name;
-                        break;
-                    case "category":
-                        result["category"] = element.Category?.Name;
-                        break;
-                    case "level":
-                    case "level.name":
-                        var levelInfo = GetElementLevel(doc, element);
-                        result["levelName"] = levelInfo?.Name;
-                        break;
-                    case "geometry.locationpoint":
-                        if (element is FamilyInstance fi && fi.Location is LocationPoint lp)
-                        {
-                            result["locationPoint"] = new
-                            {
-                                x = lp.Point.X * 304.8,
-                                y = lp.Point.Y * 304.8,
-                                z = lp.Point.Z * 304.8
-                            };
-                        }
-                        break;
-                    // 可以继续添加更多字段处理
+                    geometryFields.Add(field.Substring(9)); // 移除"geometry."前缀
+                }
+                else if (fieldLower.StartsWith("parameters."))
+                {
+                    string paramName = field.Substring(11); // 移除"parameters."前缀
+                    specificParams.Add(paramName);
+                }
+                else if (fieldLower.StartsWith("level."))
+                {
+                    basicFields.Add("level");
+                }
+                else
+                {
+                    // 基础字段映射
+                    switch (fieldLower)
+                    {
+                        case "elementid":
+                        case "uniqueid":
+                        case "name":
+                        case "category":
+                        case "builtincategory":
+                        case "typeid":
+                        case "typename":
+                        case "familyid":
+                        case "familyname":
+                        case "level":
+                        case "levelid":
+                        case "levelname":
+                        case "documentguid":
+                            basicFields.Add(fieldLower);
+                            break;
+                        case "boundingbox":
+                        case "transform":
+                        case "locationpoint":
+                        case "locationcurve":
+                        case "rotation":
+                            geometryFields.Add(fieldLower);
+                            break;
+                        case "parameters":
+                            parameterFields.Add("all");
+                            break;
+                    }
                 }
             }
 
-            return result;
+            // 如果需要基础信息
+            if (basicFields.Count > 0)
+            {
+                var basicInfo = BuildBasicInfo(doc, element);
+                // 选择性地添加基础字段
+                foreach (var prop in basicInfo.GetType().GetProperties())
+                {
+                    string propName = prop.Name.ToLower();
+                    if (basicFields.Contains(propName) || basicFields.Contains("*"))
+                    {
+                        result[prop.Name] = prop.GetValue(basicInfo);
+                    }
+                }
+            }
+
+            // 如果需要几何信息
+            if (geometryFields.Count > 0)
+            {
+                var geoSettings = new FilterSetting { GeometryOptions = settings.GeometryOptions ?? new GeometryOptions() };
+                var geometryInfo = BuildGeometryInfo(doc, element, geoSettings);
+
+                // 转换为字典以便选择字段
+                var geoDict = geometryInfo as Dictionary<string, object>;
+                if (geoDict != null)
+                {
+                    foreach (string geoField in geometryFields)
+                    {
+                        string key = geoField.ToLower();
+                        var matchingKey = geoDict.Keys.FirstOrDefault(k => k.ToLower() == key);
+                        if (matchingKey != null)
+                        {
+                            result[matchingKey] = geoDict[matchingKey];
+                        }
+                    }
+                }
+            }
+
+            // 如果需要参数信息
+            if (parameterFields.Count > 0 || specificParams.Count > 0)
+            {
+                // 创建临时的参数选项
+                var paramOptions = new ParameterOptions
+                {
+                    Scope = "Both",
+                    FilterMode = specificParams.Count > 0 ? "Include" : "None",
+                    ParameterNames = specificParams.Count > 0 ? specificParams : null,
+                    ReturnFormat = "Merged"
+                };
+
+                var parameters = ExtractParameters(element, paramOptions);
+
+                if (parameterFields.Contains("all"))
+                {
+                    // 返回所有参数
+                    result["parameters"] = parameters["parameters"];
+                }
+                else if (specificParams.Count > 0)
+                {
+                    // 返回指定的参数
+                    var mergedParams = parameters["parameters"] as Dictionary<string, string>;
+                    if (mergedParams != null)
+                    {
+                        var filteredParams = new Dictionary<string, string>();
+                        foreach (string paramName in specificParams)
+                        {
+                            // 查找匹配的参数（不区分大小写）
+                            var matchingKey = mergedParams.Keys.FirstOrDefault(k =>
+                                k.Equals(paramName, StringComparison.OrdinalIgnoreCase) ||
+                                k.Equals($"Type.{paramName}", StringComparison.OrdinalIgnoreCase));
+
+                            if (matchingKey != null)
+                            {
+                                filteredParams[paramName] = mergedParams[matchingKey];
+                            }
+                        }
+                        if (filteredParams.Count > 0)
+                        {
+                            result["parameters"] = filteredParams;
+                        }
+                    }
+                }
+            }
+
+            return result.Count > 0 ? result : BuildMinimalInfo(element);
         }
 
         /// <summary>
@@ -862,22 +1210,30 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                     if (!ShouldIncludeParameter(paramName, param.Definition as InternalDefinition, options))
                         continue;
 
-                    string displayValue = param.AsValueString() ?? param.AsString();
+                    // 检查是否为敏感参数
+                    bool isSensitive = IsSensitiveParameter(paramName);
+                    string displayValue = isSensitive ? "[REDACTED]" : (param.AsValueString() ?? param.AsString());
+                    object rawValue = isSensitive ? "[REDACTED]" : GetParameterRawValue(param);
 
                     if (options.ReturnFormat == "Separated")
                     {
+                        var internalDef = param.Definition as InternalDefinition;
                         instanceParams.Add(new
                         {
                             name = paramName,
                             displayValue = displayValue,
-                            rawValue = GetParameterRawValue(param),
+                            rawValue = rawValue,
                             storageType = param.StorageType.ToString(),
+                            builtInName = internalDef?.BuiltInParameter.ToString() ?? null,
+                            builtInEnum = internalDef != null ? (int?)internalDef.BuiltInParameter : null,
+                            isReadOnly = param.IsReadOnly,
+                            guid = param.IsShared ? param.GUID.ToString() : null,
                             source = "Instance"
                         });
                     }
                     else
                     {
-                        mergedParams[paramName] = displayValue;
+                        mergedParams[paramName] = displayValue.ToString();
                     }
                 }
             }
@@ -898,23 +1254,31 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                         if (!ShouldIncludeParameter(paramName, param.Definition as InternalDefinition, options))
                             continue;
 
-                        string displayValue = param.AsValueString() ?? param.AsString();
+                        // 检查是否为敏感参数
+                        bool isSensitive = IsSensitiveParameter(paramName);
+                        string displayValue = isSensitive ? "[REDACTED]" : (param.AsValueString() ?? param.AsString());
+                        object rawValue = isSensitive ? "[REDACTED]" : GetParameterRawValue(param);
 
                         if (options.ReturnFormat == "Separated")
                         {
+                            var internalDef = param.Definition as InternalDefinition;
                             typeParams.Add(new
                             {
                                 name = paramName,
                                 displayValue = displayValue,
-                                rawValue = GetParameterRawValue(param),
+                                rawValue = rawValue,
                                 storageType = param.StorageType.ToString(),
+                                builtInName = internalDef?.BuiltInParameter.ToString() ?? null,
+                                builtInEnum = internalDef != null ? (int?)internalDef.BuiltInParameter : null,
+                                isReadOnly = param.IsReadOnly,
+                                guid = param.IsShared ? param.GUID.ToString() : null,
                                 source = "Type"
                             });
                         }
                         else
                         {
                             // 在合并格式中，类型参数加 "Type." 前缀
-                            mergedParams[$"Type.{paramName}"] = displayValue;
+                            mergedParams[$"Type.{paramName}"] = displayValue.ToString();
                         }
                     }
                 }
@@ -963,6 +1327,32 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                 return !isInList;
 
             return true;
+        }
+
+        /// <summary>
+        /// 判断是否为敏感参数
+        /// </summary>
+        private static bool IsSensitiveParameter(string paramName)
+        {
+            if (string.IsNullOrEmpty(paramName))
+                return false;
+
+            // 敏感参数关键词列表
+            string[] sensitiveKeywords = new[]
+            {
+                "Password", "License", "SerialNumber", "AuthToken",
+                "ApiKey", "PrivateKey", "Secret", "Credential",
+                "Token", "Key"
+            };
+
+            string lowerName = paramName.ToLower();
+            foreach (string keyword in sensitiveKeywords)
+            {
+                if (lowerName.Contains(keyword.ToLower()))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
