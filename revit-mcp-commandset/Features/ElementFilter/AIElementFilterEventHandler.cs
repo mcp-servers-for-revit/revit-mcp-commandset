@@ -661,11 +661,15 @@ namespace RevitMCPCommandSet.Features.ElementFilter
             // 添加面元素的几何信息（墙、楼板、屋顶等）
             if (settings.GeometryOptions == null || settings.GeometryOptions.CalculateDetailedGeometry)
             {
-                // 获取厚度信息
+                // 获取厚度信息（转换为毫米数值）
                 var thicknessInfo = GetThicknessInfo(element);
                 if (thicknessInfo != null)
                 {
-                    geometryData["thickness"] = thicknessInfo;
+                    // 从 FilterParameterInfo 提取数值
+                    if (double.TryParse(thicknessInfo.Value, out double thicknessValue))
+                    {
+                        geometryData["thickness"] = thicknessValue; // 已经是毫米单位
+                    }
                 }
 
                 // 对于楼板、屋顶等面元素
@@ -1233,7 +1237,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                     }
                     else
                     {
-                        mergedParams[paramName] = displayValue.ToString();
+                        mergedParams[paramName] = displayValue ?? string.Empty;
                     }
                 }
             }
@@ -1278,7 +1282,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                         else
                         {
                             // 在合并格式中，类型参数加 "Type." 前缀
-                            mergedParams[$"Type.{paramName}"] = displayValue.ToString();
+                            mergedParams[$"Type.{paramName}"] = displayValue ?? string.Empty;
                         }
                     }
                 }

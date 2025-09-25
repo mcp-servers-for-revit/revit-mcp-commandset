@@ -402,3 +402,6 @@ FodyWeavers.xsd
 
 # Claude Code settings
 .claude/settings.local.json
+
+# Project documentation folder
+doc/
