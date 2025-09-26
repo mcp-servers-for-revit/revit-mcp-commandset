@@ -607,28 +607,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                     geometryData["rotation"] = locPoint.Rotation * 180 / Math.PI;
                 }
 
-                // 根据GeometryOptions决定是否包含高开销项
-                if (settings.GeometryOptions != null)
-                {
-                    if (settings.GeometryOptions.IncludeHandOrientation)
-                    {
-                        XYZ hand = familyInstance.HandOrientation;
-                        geometryData["handOrientation"] = new { x = hand.X, y = hand.Y, z = hand.Z };
-                    }
-                    if (settings.GeometryOptions.IncludeFacingOrientation)
-                    {
-                        XYZ facing = familyInstance.FacingOrientation;
-                        geometryData["facingOrientation"] = new { x = facing.X, y = facing.Y, z = facing.Z };
-                    }
-                    if (settings.GeometryOptions.IncludeIsHandFlipped)
-                    {
-                        geometryData["isHandFlipped"] = familyInstance.HandFlipped;
-                    }
-                    if (settings.GeometryOptions.IncludeIsFacingFlipped)
-                    {
-                        geometryData["isFacingFlipped"] = familyInstance.FacingFlipped;
-                    }
-                }
+                // 已删除GeometryOptions相关逻辑，现在使用字段驱动架构
 
                 // 获取宿主元素标高
                 if (familyInstance.Host != null)
@@ -659,7 +638,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
             }
 
             // 添加面元素的几何信息（墙、楼板、屋顶等）
-            if (settings.GeometryOptions == null || settings.GeometryOptions.CalculateDetailedGeometry)
+            if (true) // 简化逻辑，总是计算
             {
                 // 获取厚度信息（转换为毫米数值）
                 var thicknessInfo = GetThicknessInfo(element);
@@ -760,8 +739,8 @@ namespace RevitMCPCommandSet.Features.ElementFilter
         {
             var basicInfo = BuildBasicInfo(doc, element);
 
-            // 提取参数
-            var parameters = ExtractParameters(element, settings.ParameterOptions);
+            // 提取参数 - 使用新的字段驱动架构
+            var parameters = ExtractParameters(element, null); // ParameterOptions已删除
 
             // 合并基础信息和参数信息
             var result = new Dictionary<string, object>();
@@ -770,17 +749,8 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                 result[prop.Name] = prop.GetValue(basicInfo);
             }
 
-            // 根据返回格式决定如何添加参数
-            if (settings.ParameterOptions?.ReturnFormat == "Separated")
-            {
-                result["instanceParameters"] = parameters["instanceParameters"];
-                result["typeParameters"] = parameters["typeParameters"];
-            }
-            else
-            {
-                // Merged格式
-                result["parameters"] = parameters["parameters"];
-            }
+            // 使用新的字段架构，参数已统一处理
+            result["parameters"] = parameters["parameters"];
 
             return result;
         }
