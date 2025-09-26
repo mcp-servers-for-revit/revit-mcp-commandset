@@ -1,11 +1,11 @@
 using Autodesk.Revit.DB;
-using RevitMCPCommandSet.Models.Geometry;
+using RevitMCPCommandSet.Utils;
 
 namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
 {
     /// <summary>
     /// 边界框字段构建器
-    /// 构建 geometry.boundingBox 字段：minX, minY, minZ, maxX, maxY, maxZ
+    /// 构建 geometry.boundingBox 字段：返回BoundingBoxInfo结构
     /// </summary>
     public class BoundingBoxFieldBuilder : IFieldBuilder
     {
@@ -27,13 +27,18 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
                     return; // 无法获取边界框，静默失败
                 }
 
-                // 转换为毫米并构建结果
-                context.Result["minX"] = boundingBox.Min.X * 304.8;
-                context.Result["minY"] = boundingBox.Min.Y * 304.8;
-                context.Result["minZ"] = boundingBox.Min.Z * 304.8;
-                context.Result["maxX"] = boundingBox.Max.X * 304.8;
-                context.Result["maxY"] = boundingBox.Max.Y * 304.8;
-                context.Result["maxZ"] = boundingBox.Max.Z * 304.8;
+                // 确保geometry节点存在
+                if (!context.Result.ContainsKey("geometry"))
+                    context.Result["geometry"] = new Dictionary<string, object>();
+
+                var geoDict = context.Result["geometry"] as Dictionary<string, object>;
+
+                // 使用GeometryUtils转换为BoundingBoxInfo
+                var boundingBoxInfo = GeometryUtils.FromBoundingBoxXYZ(boundingBox);
+                if (boundingBoxInfo != null)
+                {
+                    geoDict["boundingBox"] = boundingBoxInfo;
+                }
             }
             catch
             {

@@ -38,10 +38,10 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders
             RegisterBuilder(new FamilyInfoFieldBuilder());
             RegisterBuilder(new LevelInfoFieldBuilder());
 
-            // Geometry 字段构建器
-            RegisterBuilder(new BoundingBoxFieldBuilder());
-            RegisterBuilder(new LocationPointFieldBuilder());
-            RegisterBuilder(new LocationCurveFieldBuilder());
+            // Geometry 字段构建器（新的统一架构）
+            RegisterBuilder(new LocationFieldBuilder());    // 统一的位置字段
+            RegisterBuilder(new ProfileFieldBuilder());     // 轮廓字段
+            RegisterBuilder(new BoundingBoxFieldBuilder()); // 更新的包围盒字段
             RegisterBuilder(new ThicknessFieldBuilder());
             RegisterBuilder(new HeightFieldBuilder());
             RegisterBuilder(new WidthFieldBuilder());
@@ -57,9 +57,10 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders
             _fieldPresets["core.identityLite"] = new List<string> { "name", "category", "builtInCategory" };
             _fieldPresets["listDisplay"] = new List<string> { "name", "category", "builtInCategory" };
             _fieldPresets["typeAnalysis"] = new List<string> { "name", "category", "builtInCategory", "core.typeInfo" };
-            _fieldPresets["spatialAnalysis"] = new List<string> { "name", "category", "builtInCategory", "geometry.boundingBox" };
+            _fieldPresets["spatialAnalysis"] = new List<string> { "name", "category", "builtInCategory", "geometry.location", "geometry.boundingBox" };
             _fieldPresets["detailView"] = new List<string> { "name", "category", "builtInCategory", "core.typeInfo", "core.levelInfo" };
             _fieldPresets["familyAnalysis"] = new List<string> { "name", "category", "builtInCategory", "core.typeInfo", "core.familyInfo" };
+            _fieldPresets["floorAnalysis"] = new List<string> { "name", "category", "geometry.profile", "geometry.boundingBox" };
         }
 
         /// <summary>

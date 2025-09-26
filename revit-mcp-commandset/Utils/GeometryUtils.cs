@@ -147,5 +147,121 @@ namespace RevitMCPCommandSet.Utils
         }
 
         #endregion
+
+        #region ## 新增统一转换方法
+
+        /// <summary>
+        /// 从Revit Location转换为LocationInfo
+        /// </summary>
+        public static Models.Geometry.LocationInfo FromLocation(Location location, Features.ElementFilter.FieldBuilders.FieldContext context = null)
+        {
+            if (location == null)
+            {
+                context?.AddWarning("元素没有位置信息");
+                return null;
+            }
+
+            var info = new Models.Geometry.LocationInfo();
+
+            if (location is LocationPoint locPoint)
+            {
+                info.Point = FromLocationPoint(locPoint);
+                if (info.Point == null)
+                    context?.AddWarning("无法获取点位置信息");
+            }
+            else if (location is LocationCurve locCurve)
+            {
+                info.Line = FromLocationCurve(locCurve, context);
+                if (info.Line == null)
+                    context?.AddWarning("无法获取线位置信息");
+            }
+            else
+            {
+                context?.AddWarning($"不支持的位置类型: {location.GetType().Name}");
+                return null;
+            }
+
+            return info;
+        }
+
+        /// <summary>
+        /// LocationPoint转JZPoint
+        /// </summary>
+        public static JZPoint FromLocationPoint(LocationPoint locationPoint)
+        {
+            var point = locationPoint?.Point;
+            if (point == null) return null;
+            return new JZPoint(point.X * 304.8, point.Y * 304.8, point.Z * 304.8);
+        }
+
+        /// <summary>
+        /// LocationCurve转JZLine（处理非直线）
+        /// </summary>
+        public static JZLine FromLocationCurve(LocationCurve locationCurve, Features.ElementFilter.FieldBuilders.FieldContext context = null)
+        {
+            var curve = locationCurve?.Curve;
+            if (curve == null) return null;
+
+            // 获取起点和终点
+            var start = curve.GetEndPoint(0);
+            var end = curve.GetEndPoint(1);
+
+            // 如果不是直线，添加警告
+            if (!(curve is Line))
+            {
+                context?.AddWarning($"定位曲线类型 {curve.GetType().Name} 已简化为直线段");
+            }
+
+            return new JZLine(
+                start.X * 304.8, start.Y * 304.8, start.Z * 304.8,
+                end.X * 304.8, end.Y * 304.8, end.Z * 304.8
+            );
+        }
+
+        /// <summary>
+        /// BoundingBoxXYZ转BoundingBoxInfo
+        /// </summary>
+        public static Models.Geometry.BoundingBoxInfo FromBoundingBoxXYZ(BoundingBoxXYZ bbox)
+        {
+            if (bbox == null) return null;
+            return new Models.Geometry.BoundingBoxInfo
+            {
+                Min = new JZPoint(bbox.Min.X * 304.8, bbox.Min.Y * 304.8, bbox.Min.Z * 304.8),
+                Max = new JZPoint(bbox.Max.X * 304.8, bbox.Max.Y * 304.8, bbox.Max.Z * 304.8)
+            };
+        }
+
+        /// <summary>
+        /// CurveLoop转JZLine列表（处理非线性边）
+        /// </summary>
+        public static List<JZLine> FromCurveLoop(CurveLoop curveLoop, Features.ElementFilter.FieldBuilders.FieldContext context = null)
+        {
+            var lines = new List<JZLine>();
+            bool hasNonLinearCurve = false;
+
+            foreach (Curve curve in curveLoop)
+            {
+                if (!(curve is Line))
+                {
+                    hasNonLinearCurve = true;
+                }
+
+                var start = curve.GetEndPoint(0);
+                var end = curve.GetEndPoint(1);
+                lines.Add(new JZLine(
+                    start.X * 304.8, start.Y * 304.8, start.Z * 304.8,
+                    end.X * 304.8, end.Y * 304.8, end.Z * 304.8
+                ));
+            }
+
+            if (hasNonLinearCurve)
+            {
+                context?.AddWarning("轮廓包含非直线边（如圆弧），已简化为直线段");
+            }
+
+            return lines;
+        }
+
+        #endregion
     }
 }
