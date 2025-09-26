@@ -8,7 +8,11 @@
       "mcp__revit-mcp__get_revit_status",
       "mcp__revit-mcp__create_element",
       "mcp__revit-mcp__get_element_creation_suggestion",
-      "mcp__revit-mcp__operate_element"
+      "mcp__revit-mcp__operate_element",
+      "mcp__revit-mcp__operate_element_visual",
+      "mcp__revit-mcp__operate_element_visibility",
+      "mcp__revit-mcp__operate_element_transform",
+      "mcp__revit-mcp__operate_element_modify"
     ],
     "deny": [],
     "ask": []

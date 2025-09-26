@@ -24,14 +24,8 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
 
                 if (locationInfo == null) return;
 
-                // 确保geometry节点存在
-                if (!context.Result.ContainsKey("geometry"))
-                    context.Result["geometry"] = new Dictionary<string, object>();
-
-                var geoDict = context.Result["geometry"] as Dictionary<string, object>;
-
-                // LocationInfo会自动序列化为正确的结构
-                geoDict["location"] = locationInfo;
+                // LocationInfo会自动序列化为正确的结构并写入geometry节点
+                context.SetNodeValue("geometry", "location", locationInfo);
             }
             catch (Exception ex)
             {

@@ -37,8 +37,8 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
 
                 if (height.HasValue && height.Value > 0)
                 {
-                    // 转换为毫米
-                    context.Result["height"] = height.Value * 304.8;
+                    // 转换为毫米并写入geometry节点
+                    context.SetNodeValue("geometry", "height", height.Value * 304.8);
                 }
             }
             catch

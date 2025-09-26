@@ -45,8 +45,8 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
 
                 if (thickness.HasValue)
                 {
-                    // 转换为毫米
-                    context.Result["thickness"] = thickness.Value * 304.8;
+                    // 转换为毫米并写入geometry节点
+                    context.SetNodeValue("geometry", "thickness", thickness.Value * 304.8);
                 }
             }
             catch

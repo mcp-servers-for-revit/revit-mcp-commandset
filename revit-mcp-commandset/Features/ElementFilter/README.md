@@ -17,8 +17,70 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 
 - **多维度过滤**: 支持按类别、类型、族、空间范围、可见性等条件进行组合过滤
 - **智能查询**: 基于 AI 驱动的元素筛选逻辑
+- **节点化架构**: 统一的数据节点组织，便于AI理解和处理
 - **详细信息**: 返回完整的元素属性、几何信息和参数数据
 - **性能优化**: 支持结果数量限制，避免大量数据的性能问题
+
+## 节点化数据架构 v2.0
+
+ElementFilter 采用**节点化数据组织**模式，将元素信息分类存储在不同节点中，提供更清晰的数据结构：
+
+### 核心数据节点
+
+| 节点名 | 内容 | 说明 |
+|--------|------|------|
+| `identity` | name、category、builtInCategory | 元素身份标识信息 |
+| `type` | typeId、typeName、familyId*、familyName* | **统一的类型信息节点** |
+| `geometry` | location、boundingBox、thickness、height、area等 | **统一的几何信息节点** |
+| `level` | levelId、levelName | 所属标高信息 |
+| `parameters` | instance、type 参数分类 | 元素参数信息 |
+
+**注**：
+- `*` 族实例专有字段，系统族元素不包含
+- `family` 字段已**废弃**，族信息现在统一在 `type` 节点内
+
+### 字段查询系统
+
+支持两种字段请求方式：
+
+#### 1. 原子字段 (fields)
+精确控制返回的数据字段：
+```json
+"fields": ["identity", "type", "geometry.location", "geometry.thickness"]
+```
+
+#### 2. 预设组合 (fieldPresets)
+快速获取常用字段组合：
+```json
+"fieldPresets": ["spatialAnalysis", "typeAnalysis"]
+```
+
+### 可用字段列表
+
+**基础节点字段**：
+- `identity` - 身份信息
+- `type` - 类型信息（包含族信息）
+- `level` - 标高信息
+
+**几何节点字段**：
+- `geometry.location` - 位置信息（自动识别点/线）
+- `geometry.boundingBox` - 包围盒
+- `geometry.profile` - 轮廓信息（楼板等）
+- `geometry.thickness` - 厚度
+- `geometry.height` - 高度
+- `geometry.width` - 宽度
+- `geometry.area` - 面积
+
+### 预设字段组合
+
+| 预设名 | 包含字段 | 适用场景 |
+|--------|----------|----------|
+| `listDisplay` | identity | 简单列表显示 |
+| `typeAnalysis` | identity + type | 类型分析 |
+| `spatialAnalysis` | identity + geometry.location + geometry.boundingBox | 空间分析 |
+| `detailView` | identity + type + level | 详细视图 |
+| `familyAnalysis` | identity + type + family(废弃) | 族分析 |
+| `floorAnalysis` | identity + geometry.profile + geometry.boundingBox | 楼板分析 |
 
 ## 核心组件
 
@@ -35,6 +97,7 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 
 ### 命令调用
 
+**基础过滤查询**：
 ```json
 {
   "data": {
@@ -47,7 +110,25 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 }
 ```
 
+**节点化字段查询**：
+```json
+{
+  "data": {
+    "elementIds": [123456, 789012],
+    "fields": ["identity", "type", "geometry.location", "geometry.thickness"],
+    "fieldPresets": ["spatialAnalysis"],
+    "parameters": {
+      "includeInstance": true,
+      "includeType": true,
+      "flatten": true
+    }
+  }
+}
+```
+
 ### 参数说明 (FilterSetting)
+
+#### 基础过滤参数
 
 | 参数名 | 类型 | 默认值 | 必填 | 说明 |
 |--------|------|--------|------|------|
@@ -60,6 +141,26 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 | `boundingBoxMin` | BoundingBoxPoint | null | 否 | 空间过滤最小边界点 (mm) |
 | `boundingBoxMax` | BoundingBoxPoint | null | 否 | 空间过滤最大边界点 (mm) |
 | `maxElements` | number | 50 | 否 | 返回元素数量限制，建议不超过50 |
+| `elementIds` | number[] | null | 否 | 直接查询指定ElementId的元素 |
+
+#### 节点化字段参数
+
+| 参数名 | 类型 | 默认值 | 必填 | 说明 |
+|--------|------|--------|------|------|
+| `fields` | string[] | null | 否 | 原子字段列表，精确控制返回字段 |
+| `fieldPresets` | string[] | null | 否 | 预设字段组合，快速获取常用字段 |
+| `parameters` | ParameterOptions | null | 否 | 参数查询配置 |
+
+#### 参数查询配置 (ParameterOptions)
+
+| 参数名 | 类型 | 默认值 | 必填 | 说明 |
+|--------|------|--------|------|------|
+| `includeInstance` | boolean | true | 否 | 包含实例参数 |
+| `includeType` | boolean | false | 否 | 包含类型参数 |
+| `includeBuiltIn` | boolean | false | 否 | 包含内置参数 |
+| `flatten` | boolean | true | 否 | 扁平化参数值格式 |
+| `names` | string[] | null | 否 | 指定参数名称列表 |
+| `singleName` | string | null | 否 | 单个参数名称 |
 
 #### BoundingBoxPoint 结构
 
@@ -72,23 +173,85 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 
 ### 返回格式
 
+#### 节点化结构返回示例
+
+**门（族实例）**：
 ```json
 {
   "Success": true,
   "Message": "查询成功",
   "Response": [
     {
-      "Id": 123456,
-      "Category": "墙",
-      "Type": "基本墙",
-      "Level": "Level 1",
-      "Location": { "x": 1000, "y": 2000, "z": 0 },
-      "Parameters": {
-        "长度": 5000.0,
-        "高度": 3000.0,
-        "宽度": 200.0
+      "elementId": 333593,
+      "identity": {
+        "name": "750 x 2000mm",
+        "category": "门",
+        "builtInCategory": -2000023
       },
-      "Geometry": { /* 几何信息 */ }
+      "type": {
+        "typeId": 94654,
+        "typeName": "750 x 2000mm",
+        "familyId": 242453,
+        "familyName": "单扇 - 与墙齐"
+      },
+      "geometry": {
+        "location": {
+          "point": { "x": 1337, "y": 1745, "z": 0 }
+        },
+        "boundingBox": {
+          "min": { "x": 886, "y": 895, "z": 0 },
+          "max": { "x": 1788, "y": 1870, "z": 2075 }
+        },
+        "width": 750,
+        "height": 2000
+      },
+      "level": {
+        "levelId": 311,
+        "levelName": "标高 1"
+      }
+    }
+  ]
+}
+```
+
+**墙（系统族）**：
+```json
+{
+  "Success": true,
+  "Message": "查询成功",
+  "Response": [
+    {
+      "elementId": 333530,
+      "identity": {
+        "name": "常规 - 200mm",
+        "category": "墙",
+        "builtInCategory": -2000011
+      },
+      "type": {
+        "typeId": 398,
+        "typeName": "常规 - 200mm"
+      },
+      "geometry": {
+        "location": {
+          "line": {
+            "p0": { "x": -3512, "y": 1745, "z": 0 },
+            "p1": { "x": 6187, "y": 1745, "z": 0 }
+          }
+        },
+        "thickness": 200,
+        "height": 8000
+      },
+      "parameters": {
+        "instance": {
+          "长度": 9700,
+          "高度": 8000,
+          "面积": 76.1
+        },
+        "type": {
+          "厚度": 200,
+          "功能": 1
+        }
+      }
     }
   ]
 }
@@ -96,7 +259,7 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 
 ## 使用示例
 
-### 1. 查询所有墙体实例
+### 1. 基础查询：所有墙体实例
 
 ```json
 {
@@ -108,34 +271,69 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 }
 ```
 
-### 2. 查询指定空间范围内的门
+### 2. 节点化查询：获取门的详细信息
 
 ```json
 {
   "data": {
     "filterCategory": "OST_Doors",
     "includeInstances": true,
-    "boundingBoxMin": {
-      "p0": { "x": 0, "y": 0, "z": 0 },
-      "p1": { "x": 5000, "y": 5000, "z": 2000 }
-    },
-    "boundingBoxMax": {
-      "p0": { "x": 5000, "y": 5000, "z": 2000 },
-      "p1": { "x": 10000, "y": 10000, "z": 4000 }
+    "fields": ["identity", "type", "geometry.location", "geometry.width", "geometry.height"],
+    "maxElements": 10
+  }
+}
+```
+
+### 3. 预设查询：空间分析
+
+```json
+{
+  "data": {
+    "elementIds": [333593, 333530],
+    "fieldPresets": ["spatialAnalysis", "typeAnalysis"]
+  }
+}
+```
+
+### 4. 参数查询：获取墙体的实例和类型参数
+
+```json
+{
+  "data": {
+    "filterCategory": "OST_Walls",
+    "includeInstances": true,
+    "fields": ["identity", "type"],
+    "parameters": {
+      "includeInstance": true,
+      "includeType": true,
+      "flatten": false
     }
   }
 }
 ```
 
-### 3. 查询当前视图可见的所有构件类型
+### 5. 混合查询：楼板轮廓分析
 
 ```json
 {
   "data": {
-    "includeTypes": true,
-    "includeInstances": false,
-    "filterVisibleInCurrentView": true,
-    "maxElements": 100
+    "filterCategory": "OST_Floors",
+    "fields": ["geometry.profile", "geometry.area"],
+    "fieldPresets": ["floorAnalysis"]
+  }
+}
+```
+
+### 6. 指定ElementId查询
+
+```json
+{
+  "data": {
+    "elementIds": [333593],
+    "fields": ["identity", "type"],
+    "parameters": {
+      "names": ["高度", "宽度"]
+    }
   }
 }
 ```

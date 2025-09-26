@@ -31,8 +31,8 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
 
                 if (width.HasValue && width.Value > 0)
                 {
-                    // 转换为毫米
-                    context.Result["width"] = width.Value * 304.8;
+                    // 转换为毫米并写入geometry节点
+                    context.SetNodeValue("geometry", "width", width.Value * 304.8);
                 }
             }
             catch

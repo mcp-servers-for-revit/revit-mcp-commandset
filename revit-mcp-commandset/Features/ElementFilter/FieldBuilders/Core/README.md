@@ -16,17 +16,17 @@ Core 模块负责构建元素的核心信息字段，包括类型、族、标高
 ### Builder 字段（需要额外 API 调用）
 这些字段需要额外的 Revit API 调用，使用专门的 Builder 实现：
 
-- `core.typeInfo` - 类型信息（需要 GetElement(typeId)）
-- `core.familyInfo` - 族信息（需要访问 FamilySymbol.Family）
-- `core.levelInfo` - 标高信息（需要 GetElement(levelId)）
+- `identity` - 身份信息（name, category, builtInCategory）
+- `type` - 类型信息（统一管理typeId/typeName/familyId/familyName）
+- `level` - 标高信息（需要 GetElement(levelId)）
 
 ## 构建器列表
 
 | 字段名 | 构建器类 | 适用元素 | 依赖缓存 |
 |--------|----------|----------|----------|
-| core.typeInfo | TypeInfoFieldBuilder | 所有元素 | TypeElement |
-| core.familyInfo | FamilyInfoFieldBuilder | 族实例 | TypeElement, Family |
-| core.levelInfo | LevelInfoFieldBuilder | 有标高的元素 | Level |
+| identity | IdentityFieldBuilder | 所有元素 | - |
+| type | TypeInfoFieldBuilder | 所有元素 | TypeElement, Family |
+| level | LevelInfoFieldBuilder | 有标高的元素 | Level |
 
 ## 缓存策略
 

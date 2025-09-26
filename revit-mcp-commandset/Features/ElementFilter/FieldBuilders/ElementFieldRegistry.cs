@@ -36,7 +36,6 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders
             // Core 字段构建器
             RegisterBuilder(new IdentityFieldBuilder());    // 新增：身份信息构建器
             RegisterBuilder(new TypeInfoFieldBuilder());
-            RegisterBuilder(new FamilyInfoFieldBuilder());
             RegisterBuilder(new LevelInfoFieldBuilder());
 
             // Geometry 字段构建器（新的统一架构）
@@ -60,7 +59,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders
             _fieldPresets["typeAnalysis"] = new List<string> { "identity", "type" };
             _fieldPresets["spatialAnalysis"] = new List<string> { "identity", "geometry.location", "geometry.boundingBox" };
             _fieldPresets["detailView"] = new List<string> { "identity", "type", "level" };
-            _fieldPresets["familyAnalysis"] = new List<string> { "identity", "type", "family" };
+            _fieldPresets["familyAnalysis"] = new List<string> { "identity", "type" };
             _fieldPresets["floorAnalysis"] = new List<string> { "identity", "geometry.profile", "geometry.boundingBox" };
         }
 

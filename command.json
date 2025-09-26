@@ -14,9 +14,36 @@
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
     {
-      "commandName": "operate_element",
-      "description": "Operates on elements using ElementId",
-      "assemblyPath": "RevitMCPCommandSet.dll"
+      "commandName": "operate_element_visual",
+      "description": "纯视觉效果操作：选择、高亮、着色、透明度、3D聚焦。适用于冲突标记、专业分类、视图展示。",
+      "assemblyPath": "RevitMCPCommandSet.dll",
+      "className": "RevitMCPCommandSet.Features.ElementVisual.VisualOperateCommand",
+      "version": "2.0",
+      "category": "ElementOperation"
+    },
+    {
+      "commandName": "operate_element_visibility",
+      "description": "可见性控制操作：隐藏、临时隐藏、隔离显示、取消隐藏、重置视图。适用于视图清理、施工阶段管理、专业系统聚焦。",
+      "assemblyPath": "RevitMCPCommandSet.dll",
+      "className": "RevitMCPCommandSet.Features.ElementVisibility.VisibilityOperateCommand",
+      "version": "2.0",
+      "category": "ElementOperation"
+    },
+    {
+      "commandName": "operate_element_transform",
+      "description": "几何变换操作：旋转、镜像、翻转、移动。适用于位置调整、布局优化、对称设计。",
+      "assemblyPath": "RevitMCPCommandSet.dll",
+      "className": "RevitMCPCommandSet.Features.ElementTransform.TransformOperateCommand",
+      "version": "2.0",
+      "category": "ElementOperation"
+    },
+    {
+      "commandName": "operate_element_modify",
+      "description": "参数修改与删除操作：修改参数值、删除元素。适用于属性批量更新、构件清理、数据修正。",
+      "assemblyPath": "RevitMCPCommandSet.dll",
+      "className": "RevitMCPCommandSet.Features.ElementModify.ModifyOperateCommand",
+      "version": "2.0",
+      "category": "ElementOperation"
     },
     {
       "commandName": "create_element",

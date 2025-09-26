@@ -57,9 +57,9 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
 
                 if (area.HasValue && area.Value > 0)
                 {
-                    // 转换为平方毫米，然后转为平方米
+                    // 转换为平方毫米，然后转为平方米并写入geometry节点
                     var areaInMm2 = area.Value * 304.8 * 304.8;
-                    context.Result["area"] = areaInMm2 / 1000000.0; // 转为平方米
+                    context.SetNodeValue("geometry", "area", areaInMm2 / 1000000.0); // 转为平方米
                 }
             }
             catch

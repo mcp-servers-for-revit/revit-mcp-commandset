@@ -27,15 +27,10 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
                 // 使用扩展方法获取轮廓
                 var profiles = context.Element.GetElementProfile();
 
-                if (!context.Result.ContainsKey("geometry"))
-                    context.Result["geometry"] = new Dictionary<string, object>();
-
-                var geoDict = context.Result["geometry"] as Dictionary<string, object>;
-
                 if (profiles != null && profiles.Count > 0)
                 {
-                    // 直接输出List<JZFace>
-                    geoDict["profile"] = profiles;
+                    // 直接输出List<JZFace>并写入geometry节点
+                    context.SetNodeValue("geometry", "profile", profiles);
 
                     // 检查是否有非线性边的警告
                     foreach (var face in profiles)

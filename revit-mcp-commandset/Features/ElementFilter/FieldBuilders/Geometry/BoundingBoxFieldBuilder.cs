@@ -27,17 +27,11 @@ namespace RevitMCPCommandSet.Features.ElementFilter.FieldBuilders.Geometry
                     return; // 无法获取边界框，静默失败
                 }
 
-                // 确保geometry节点存在
-                if (!context.Result.ContainsKey("geometry"))
-                    context.Result["geometry"] = new Dictionary<string, object>();
-
-                var geoDict = context.Result["geometry"] as Dictionary<string, object>;
-
-                // 使用GeometryUtils转换为BoundingBoxInfo
+                // 使用GeometryUtils转换为BoundingBoxInfo并写入geometry节点
                 var boundingBoxInfo = GeometryUtils.FromBoundingBoxXYZ(boundingBox);
                 if (boundingBoxInfo != null)
                 {
-                    geoDict["boundingBox"] = boundingBoxInfo;
+                    context.SetNodeValue("geometry", "boundingBox", boundingBoxInfo);
                 }
             }
             catch
