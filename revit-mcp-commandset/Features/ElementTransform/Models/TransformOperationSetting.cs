@@ -121,13 +121,8 @@ namespace RevitMCPCommandSet.Features.ElementTransform.Models
                     {
                         throw new ArgumentException("Move 操作需要提供 moveVector");
                     }
-                    // P1阶段策略限制
-                    if (MoveStrategy != "directTransform")
-                    {
-                        throw new ArgumentException(
-                            $"P1阶段仅支持 moveStrategy=directTransform，{MoveStrategy} 将在P2实现"
-                        );
-                    }
+                    // 直接设置默认值，不保留兼容分支
+                    MoveStrategy = "directTransform";
                     break;
 
                 default:

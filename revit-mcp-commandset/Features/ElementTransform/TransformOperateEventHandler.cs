@@ -292,7 +292,7 @@ namespace RevitMCPCommandSet.Features.ElementTransform
         }
 
         /// <summary>
-        /// 执行移动操作（P1阶段：directTransform策略）
+        /// 执行移动操作
         /// </summary>
         private void ExecuteMove(
             ICollection<ElementId> elementIds,
@@ -314,17 +314,18 @@ namespace RevitMCPCommandSet.Features.ElementTransform
                 {
                     Element elem = doc.GetElement(elemId);
 
-                    // 检查元素是否可移动
-                    if (!CanMoveElement(elem))
+                    // 必要判断：锁定检查
+                    if (elem.Pinned)
                     {
                         failedElements.Add(new FailureInfo
                         {
                             ElementId = elemId.IntegerValue,
-                            Reason = "元素类型不支持directTransform移动（建议使用recreate策略，P2实现）"
+                            Reason = "元素已被锁定"
                         });
                         continue;
                     }
 
+                    // 直接执行移动，让 Revit API 自行判断
                     ElementTransformUtils.MoveElement(doc, elemId, translation);
                     successfulElements.Add(elemId.IntegerValue);
                 }
@@ -333,36 +334,21 @@ namespace RevitMCPCommandSet.Features.ElementTransform
                     failedElements.Add(new FailureInfo
                     {
                         ElementId = elemId.IntegerValue,
-                        Reason = $"移动失败: {ex.Message}（可能需要recreate策略，P2实现）"
+                        Reason = $"移动失败: {ex.Message}"
                     });
                 }
             }
 
-            details["moveVector"] = setting.MoveVector;
+            // 核心数据结构
+            details["moveVector"] = setting.MoveVector;  // 保持原始mm单位对象
             details["moveStrategy"] = "directTransform";
-            details["strategyNote"] = "P1阶段仅支持directTransform，复杂场景（如宿主元素）将在P2实现recreate策略";
+            details["statistics"] = new Dictionary<string, int>
+            {
+                ["totalElements"] = elementIds.Count,
+                ["successCount"] = successfulElements.Count,
+                ["failureCount"] = failedElements.Count
+            };
         }
 
-        /// <summary>
-        /// 检查元素是否支持directTransform移动
-        /// </summary>
-        private bool CanMoveElement(Element elem)
-        {
-            // P1阶段：仅允许移动独立族实例和基本系统族
-            if (elem is FamilyInstance fi)
-            {
-                // 检查是否有宿主
-                return fi.Host == null;
-            }
-
-            // 墙、楼板等系统族可移动
-            if (elem is Wall || elem is Floor)
-            {
-                return true;
-            }
-
-            // 其他类型暂不支持
-            return false;
-        }
     }
 }
