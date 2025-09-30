@@ -303,6 +303,15 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                 }
             }
 
+            // 名称关键字过滤
+            if (!string.IsNullOrWhiteSpace(settings.FilterNameKeyword))
+            {
+                if (!IsElementNameMatchesKeyword(element, settings.FilterNameKeyword))
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -333,6 +342,50 @@ namespace RevitMCPCommandSet.Features.ElementFilter
             {
                 return false; // 如果无法获取边界框，视为不匹配
             }
+        }
+
+        /// <summary>
+        /// 检查元素名称是否匹配关键字
+        /// 检查范围：元素名称、类型名称、族名称
+        /// </summary>
+        /// <param name="element">要检查的元素</param>
+        /// <param name="keyword">关键字</param>
+        /// <returns>如果任一名称包含关键字返回true</returns>
+        private static bool IsElementNameMatchesKeyword(Element element, string keyword)
+        {
+            if (element == null || string.IsNullOrWhiteSpace(keyword))
+                return false;
+
+            var namesToCheck = new List<string>();
+
+            // 1. 元素自身名称
+            if (!string.IsNullOrWhiteSpace(element.Name))
+                namesToCheck.Add(element.Name);
+
+            // 2. 获取类型/族相关名称
+            ElementId typeId = element.GetTypeId();
+            if (typeId != null && typeId != ElementId.InvalidElementId)
+            {
+                ElementType elementType = element.Document.GetElement(typeId) as ElementType;
+                if (elementType != null)
+                {
+                    // 2.1 类型名称
+                    if (!string.IsNullOrWhiteSpace(elementType.Name))
+                        namesToCheck.Add(elementType.Name);
+
+                    // 2.2 如果是族实例，获取族名称
+                    if (elementType is FamilySymbol familySymbol)
+                    {
+                        Family family = familySymbol.Family;
+                        if (family != null && !string.IsNullOrWhiteSpace(family.Name))
+                            namesToCheck.Add(family.Name);
+                    }
+                }
+            }
+
+            // 3. 检查是否有任何名称包含关键字（不区分大小写）
+            return namesToCheck.Any(name =>
+                name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         /// <summary>

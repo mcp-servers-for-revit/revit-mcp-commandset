@@ -33,6 +33,13 @@ namespace RevitMCPCommandSet.Features.ElementFilter.Models
         [JsonProperty("filterFamilySymbolId")]
         public int FilterFamilySymbolId { get; set; } = -1;
         /// <summary>
+        /// 获取或设置名称关键字过滤条件。
+        /// 将检查元素名称、类型名称、族名称是否包含此关键字（不区分大小写）。
+        /// 如果为 null 或空，则不进行名称关键字过滤。
+        /// </summary>
+        [JsonProperty("filterNameKeyword")]
+        public string FilterNameKeyword { get; set; } = null;
+        /// <summary>
         /// 获取或设置是否包含元素类型（如墙类型、门类型等）
         /// </summary>
         [JsonProperty("includeTypes")]
