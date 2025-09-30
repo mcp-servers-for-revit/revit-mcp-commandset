@@ -123,7 +123,7 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                 Result = new AIResult<List<object>>
                 {
                     Success = false,
-                    Message = $"获取元素信息时出错: {ex.Message}",
+                    Message = ex.Message,  // 直接透传错误消息，不包裹额外前缀
                 };
             }
             finally
@@ -229,15 +229,23 @@ namespace RevitMCPCommandSet.Features.ElementFilter
                     }
                 }
 
-                // 获取所有符合基本条件的元素
-                var elements = collector.ToElements().ToList();
+                // 使用 foreach 遍历并提前终止，避免一次性加载所有元素到内存
+                int foundCount = 0;
+                int maxElements = settings.MaxElements > 0 ? settings.MaxElements : int.MaxValue;
 
-                // 应用其他过滤器
-                foreach (var element in elements)
+                foreach (var element in collector)
                 {
+                    // 提前终止：找到足够数量的元素后停止遍历
+                    if (foundCount >= maxElements)
+                    {
+                        break;
+                    }
+
+                    // 应用其他过滤条件
                     if (IsElementMatchesFilters(element, settings))
                     {
                         resultElements.Add(element);
+                        foundCount++;
                     }
                 }
 

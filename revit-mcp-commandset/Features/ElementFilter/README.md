@@ -136,7 +136,7 @@ ElementFilter 采用**节点化数据组织**模式，将元素信息分类存�
 | `filterCategory` | string | null | 否 | Revit 内置类别名称 (如"OST_Walls", "OST_Doors", "OST_GenericModel") |
 | `filterElementType` | string | null | 否 | 元素类型名称 (如"Wall", "Floor", "Autodesk.Revit.DB.Wall") |
 | `filterTypeId` | number | -1 | 否 | **统一的类型ElementId过滤**。对于族实例，匹配其FamilySymbol的ElementId；对于系统族实例（如墙、楼板），匹配其WallType、FloorType等类型的ElementId；对于类型元素本身，匹配元素自身的ElementId。使用-1表示不过滤 |
-| `filterNameKeyword` | string | null | 否 | 名称关键字过滤条件，检查元素名、类型名、族名是否包含关键字（不区分大小写） |
+| `filterNameKeyword` | string | null | 否 | 名称关键字过滤条件。支持单独使用（关键字检索模式），检查元素名、类型名、族名是否包含关键字（不区分大小写）。单独使用时 maxElements 上限 100 |
 | `includeTypes` | boolean | false | 否 | 是否包含元素类型 |
 | `includeInstances` | boolean | true | 否 | 是否包含元素实例 |
 | `filterVisibleInCurrentView` | boolean | false | 否 | 仅返回当前视图可见元素 |
@@ -481,6 +481,111 @@ ElementFilter 采用**节点化数据组织**模式，将元素信息分类存�
 ```
 
 只要任一字段匹配，元素即被选中。
+
+## 关键字检索模式（新增功能）
+
+### 功能说明
+
+从 v3.1 版本开始，ElementFilter 支持**仅使用关键字进行元素检索**，无需指定类别或类型约束。这为 AI 助手提供了更灵活的查询方式，特别适用于快速搜索和探索性查询。
+
+### 参数要求
+
+**必需参数**：
+- `filterNameKeyword`：元素名称关键字（不区分大小写）
+- `includeTypes` 或 `includeInstances`：至少一个为 `true`（默认 `includeInstances=true`）
+- `maxElements`：建议设置为 20-50，**硬性上限 100**
+
+### 性能注意事项
+
+⚠️ **重要**：关键字检索模式会遍历文档中的所有元素，性能开销较大。
+
+**性能保护机制**：
+- **maxElements 上限**：关键字模式下强制不超过 100
+- **提前终止**：找到足够数量的元素后立即停止遍历
+- **性能建议**：建议默认使用 50，特殊情况可调整至 100
+
+**性能优化建议**：
+- 优先配合 `filterCategory` 或 `filterElementType` 使用
+- 大型项目中避免使用过大的 `maxElements` 值
+- 如需更多结果，建议添加类别约束后再查询
+
+### 使用示例
+
+#### 场景1：仅使用关键字查找
+
+```json
+{
+  "data": {
+    "filterNameKeyword": "蒸烤一体机",
+    "includeInstances": true,
+    "includeTypes": false,
+    "maxElements": 50
+  }
+}
+```
+
+**说明**：在整个项目中搜索名称包含"蒸烤一体机"的元素实例
+
+#### 场景2：关键字 + 类别（推荐）
+
+```json
+{
+  "data": {
+    "filterCategory": "OST_ElectricalEquipment",
+    "filterNameKeyword": "蒸烤一体机",
+    "includeInstances": true,
+    "includeTypes": false,
+    "maxElements": 50
+  }
+}
+```
+
+**说明**：在电气设备类别中搜索，性能更优
+
+#### 场景3：关键字查找类型
+
+```json
+{
+  "data": {
+    "filterNameKeyword": "单扇",
+    "includeTypes": true,
+    "includeInstances": false,
+    "maxElements": 30
+  }
+}
+```
+
+**说明**：查找名称包含"单扇"的所有类型元素
+
+### 错误处理
+
+**超过上限错误**：
+```json
+{
+  "Success": false,
+  "Message": "关键字检索模式下，maxElements 不能超过 100（当前为 150）。建议添加 filterCategory 或 filterElementType 以提升性能"
+}
+```
+
+**解决方案**：
+1. 降低 `maxElements` 至 100 以内
+2. 添加 `filterCategory` 或 `filterElementType` 约束
+3. 使用双回合查询（先查类型，再查实例）
+
+### 限制说明
+
+| 限制项 | 值 | 说明 |
+|--------|-----|------|
+| maxElements 上限 | 100 | 关键字模式硬性限制 |
+| 建议值 | 20-50 | 平衡性能与结果数量 |
+| 默认值 | 50 | 系统默认配置 |
+
+### 与双回合查询的对比
+
+| 方式 | 优点 | 缺点 | 适用场景 |
+|------|------|------|----------|
+| **关键字检索** | 简单直接、一次调用 | 性能开销大、结果受限 | 快速搜索、已知元素少 |
+| **双回合查询** | 性能最优、结果完整 | 需要两次调用 | 大型项目、精确查询 |
 
 ## 支持的元素类别
 

@@ -126,12 +126,30 @@ namespace RevitMCPCommandSet.Features.ElementFilter.Models
             // 检查是否至少指定了一个过滤条件（elementIds 直查模式除外）
             if (ElementIds == null || ElementIds.Count == 0)
             {
-                if (string.IsNullOrWhiteSpace(FilterCategory) &&
-                    string.IsNullOrWhiteSpace(FilterElementType) &&
-                    FilterTypeId <= 0)
+                bool hasKeyword = !string.IsNullOrWhiteSpace(FilterNameKeyword);
+                bool hasTypeConstraint = !string.IsNullOrWhiteSpace(FilterCategory) ||
+                                         !string.IsNullOrWhiteSpace(FilterElementType) ||
+                                         FilterTypeId > 0;
+
+                // 至少需要一种约束条件
+                if (!hasKeyword && !hasTypeConstraint)
                 {
-                    errorMessage = "过滤设置无效: 必须至少指定一个过滤条件(类别、元素类型或类型ID)或提供元素ID列表";
+                    errorMessage = "缺少过滤条件。请至少指定以下之一：\n" +
+                                  "  • 高性能过滤：filterCategory（类别）、filterElementType（元素类型）或 filterTypeId（类型ID）\n" +
+                                  "  • 关键字检索：filterNameKeyword（需配合 maxElements，上限 100）\n" +
+                                  "  • 直接查询：elementIds（元素ID列表）";
                     return false;
+                }
+
+                // 关键字模式的 maxElements 限制
+                if (hasKeyword && !hasTypeConstraint)
+                {
+                    if (MaxElements > 100)
+                    {
+                        errorMessage = $"关键字检索模式下，maxElements 不能超过 100（当前为 {MaxElements}）。" +
+                                      "建议添加 filterCategory 或 filterElementType 以提升性能";
+                        return false;
+                    }
                 }
             }
 
