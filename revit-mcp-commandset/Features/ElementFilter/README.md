@@ -15,7 +15,8 @@ ElementFilter 模块是专为 AI 助手设计的智能 Revit 元素查询工具�
 
 ## 主要功能
 
-- **多维度过滤**: 支持按类别、类型、族、空间范围、可见性等条件进行组合过滤
+- **多维度过滤**: 支持按类别、类型、族、名称关键字、空间范围、可见性等条件进行组合过滤
+- **名称关键字搜索**: 支持按关键字搜索元素名称、类型名称、族名称（不区分大小写）
 - **智能查询**: 基于 AI 驱动的元素筛选逻辑
 - **节点化架构**: 统一的数据节点组织，便于AI理解和处理
 - **详细信息**: 返回完整的元素属性、几何信息和参数数据
@@ -135,6 +136,7 @@ ElementFilter 采用**节点化数据组织**模式，将元素信息分类存�
 | `filterCategory` | string | null | 否 | Revit 内置类别名称 (如"OST_Walls", "OST_Doors", "OST_GenericModel") |
 | `filterElementType` | string | null | 否 | 元素类型名称 (如"Wall", "Floor", "Autodesk.Revit.DB.Wall") |
 | `filterFamilySymbolId` | number | -1 | 否 | 族类型的ElementId，使用-1表示不过滤 |
+| `filterNameKeyword` | string | null | 否 | 名称关键字过滤条件，检查元素名、类型名、族名是否包含关键字（不区分大小写） |
 | `includeTypes` | boolean | false | 否 | 是否包含元素类型 |
 | `includeInstances` | boolean | true | 否 | 是否包含元素实例 |
 | `filterVisibleInCurrentView` | boolean | false | 否 | 仅返回当前视图可见元素 |
@@ -337,6 +339,106 @@ ElementFilter 采用**节点化数据组织**模式，将元素信息分类存�
   }
 }
 ```
+
+### 7. 名称关键字过滤：搜索包含"300"的墙体
+
+```json
+{
+  "data": {
+    "filterCategory": "OST_Walls",
+    "filterNameKeyword": "300",
+    "includeInstances": true,
+    "fields": ["identity", "type"]
+  }
+}
+```
+
+### 8. 组合过滤：搜索当前视图可见且名称包含"单扇"的门
+
+```json
+{
+  "data": {
+    "filterCategory": "OST_Doors",
+    "filterNameKeyword": "单扇",
+    "filterVisibleInCurrentView": true,
+    "includeInstances": true,
+    "fields": ["identity", "type", "geometry.location"]
+  }
+}
+```
+
+## 名称关键字过滤详解
+
+### 功能说明
+
+`filterNameKeyword` 参数提供了灵活的名称搜索功能，可以按关键字匹配以下名称字段：
+
+1. **元素名称** - `Element.Name`
+2. **类型名称** - `ElementType.Name`
+3. **族名称** - `Family.Name`（仅族实例）
+
+### 匹配规则
+
+- **包含匹配**: 只要任一名称字段包含关键字即匹配
+- **不区分大小写**: 中英文关键字都支持大小写不敏感搜索
+- **组合过滤**: 可与其他过滤条件（类别、类型、可见性等）配合使用
+
+### 使用场景示例
+
+#### 场景1: 搜索特定尺寸的墙体
+```json
+{
+  "data": {
+    "filterCategory": "OST_Walls",
+    "filterNameKeyword": "300",
+    "includeInstances": true
+  }
+}
+```
+**匹配**: "常规-300mm"、"300x500"、"基本墙-300" 等
+
+#### 场景2: 搜索特定类型的门
+```json
+{
+  "data": {
+    "filterCategory": "OST_Doors",
+    "filterNameKeyword": "单扇",
+    "includeInstances": true,
+    "includeTypes": false
+  }
+}
+```
+**匹配**: 族名包含"单扇"的所有门实例
+
+#### 场景3: 搜索特定材质的元素
+```json
+{
+  "data": {
+    "filterNameKeyword": "不锈钢",
+    "includeInstances": true
+  }
+}
+```
+**匹配**: 所有名称、类型名或族名包含"不锈钢"的元素
+
+### 技术细节
+
+**族实例匹配逻辑**：
+```
+检查顺序：
+1. Element.Name (如 "750 x 2000mm [123456]")
+2. FamilySymbol.Name (如 "750 x 2000mm")
+3. Family.Name (如 "单扇 - 与墙齐")
+```
+
+**系统族匹配逻辑**：
+```
+检查顺序：
+1. Element.Name (如 "墙 [234567]")
+2. ElementType.Name (如 "常规 - 300mm")
+```
+
+只要任一字段匹配，元素即被选中。
 
 ## 支持的元素类别
 
