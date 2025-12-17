@@ -47,6 +47,21 @@
       "commandName": "create_line_based_element",
       "description": "Create line based element such as wall",
       "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+	{
+      "commandName": "export_room_data",
+      "description": "Extract all rooms with detailed properties including area, volume, perimeter, and parameters",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+	{
+      "commandName": "get_material_quantities",
+      "description": "Calculate material quantities and takeoffs with area and volume calculations per material",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+	{
+      "commandName": "analyze_model_statistics",
+      "description": "Analyze model complexity with element counts by category, type, family, and level",
+      "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
 }
