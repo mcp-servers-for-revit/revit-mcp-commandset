@@ -76,17 +76,17 @@ namespace RevitMCPCommandSet.Services
                             {
                                 symbol = typeEle as FamilySymbol;
                                 // 获取symbol的Category对象并转换为BuiltInCategory枚举
-                                builtInCategory = (BuiltInCategory)(int)symbol.Category.Id.Value;
+                                builtInCategory = (BuiltInCategory)symbol.Category.Id.GetIntValue();
                             }
                             else if (typeEle != null && typeEle is WallType)
                             {
                                 wallType = typeEle as WallType;
-                                builtInCategory = (BuiltInCategory)(int)wallType.Category.Id.Value;
+                                builtInCategory = (BuiltInCategory)wallType.Category.Id.GetIntValue();
                             }
                             else if (typeEle != null && typeEle is DuctType)
                             {
                                 ductType = typeEle as DuctType;
-                                builtInCategory = (BuiltInCategory)(int)ductType.Category.Id.Value;
+                                builtInCategory = (BuiltInCategory)ductType.Category.Id.GetIntValue();
                             }
                         }
                     }
@@ -163,7 +163,7 @@ namespace RevitMCPCommandSet.Services
                                 );
                                 if (wall != null)
                                 {
-                                    elementIds.Add((int)wall.Id.Value);
+                                    elementIds.Add(wall.Id.GetIntValue());
                                 }
                                 break;
                             case BuiltInCategory.OST_DuctCurves:
@@ -191,7 +191,7 @@ namespace RevitMCPCommandSet.Services
                                         Parameter offsetParam = duct.get_Parameter(BuiltInParameter.RBS_OFFSET_PARAM);
                                         if (offsetParam != null)
                                             offsetParam.Set(baseOffset);
-                                        elementIds.Add((int)duct.Id.Value);
+                                        elementIds.Add(duct.Id.GetIntValue());
                                     }
                                 }
                                 break;
@@ -203,7 +203,7 @@ namespace RevitMCPCommandSet.Services
                                 var instance = doc.CreateInstance(symbol, null, JZLine.ToLine(data.LocationLine), baseLevel, topLevel, baseOffset, topOffset);
                                 if (instance != null)
                                 {
-                                    elementIds.Add((int)instance.Id.Value);
+                                    elementIds.Add(instance.Id.GetIntValue());
                                 }
                                 break;
                         }

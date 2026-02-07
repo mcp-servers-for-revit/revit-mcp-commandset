@@ -113,7 +113,7 @@ namespace RevitMCPCommandSet.Utils
                         throw new ArgumentNullException($"必要参数{typeof(Level)} {nameof(baseLevel)}缺失！");
                     // 判断是结构柱还是建筑柱
                     StructuralType structuralType = StructuralType.NonStructural;
-                    if ((int)familySymbol.Category.Id.Value == (int)BuiltInCategory.OST_StructuralColumns)
+                    if (familySymbol.Category.Id.GetIntValue() == (int)BuiltInCategory.OST_StructuralColumns)
                         structuralType = StructuralType.Column;
                     instance = doc.Create.NewFamilyInstance(
                         locationPoint,              // 实例将被放置的物理位置
@@ -868,7 +868,7 @@ namespace RevitMCPCommandSet.Utils
                  .FirstOrDefault(l => l.Name == levelName);
             if (namesakeLevel != null)
             {
-                levelName = $"{levelName}_{newLevel.Id.Value.ToString()}";
+                levelName = $"{levelName}_{newLevel.Id.GetValue()}";
             }
             newLevel.Name = levelName;
 

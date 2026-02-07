@@ -72,12 +72,12 @@ namespace RevitMCPCommandSet.Services
                             {
                                 symbol = typeEle as FamilySymbol;
                                 // 获取symbol的Category对象并转换为BuiltInCategory枚举
-                                builtInCategory = (BuiltInCategory)symbol.Category.Id.IntegerValue;
+                                builtInCategory = (BuiltInCategory)symbol.Category.Id.GetIntValue();
                             }
                             else if (typeEle != null && typeEle is FloorType)
                             {
                                 floorType = typeEle as FloorType;
-                                builtInCategory = (BuiltInCategory)floorType.Category.Id.IntegerValue;
+                                builtInCategory = (BuiltInCategory)floorType.Category.Id.GetIntValue();
                             }
                         }
                     }
@@ -136,8 +136,8 @@ namespace RevitMCPCommandSet.Services
                                 }
                                 CurveLoop curveLoop = CurveLoop.Create(data.Boundary.OuterLoop.Select(l => JZLine.ToLine(l) as Curve).ToList());
 
-                                // 多版本
-#if REVIT2022_OR_GREATER
+                                // 多版本 - Floor.Create introduced in Revit 2022 but stable in 2023+
+#if REVIT2023_OR_GREATER
                                 floor = Floor.Create(doc, new List<CurveLoop> { curveLoop }, floorType.Id, baseLevel.Id);
 #else
                                 floor = doc.Create.NewFloor(curves, floorType, baseLevel, _structural);
@@ -146,7 +146,7 @@ namespace RevitMCPCommandSet.Services
                                 if (floor != null)
                                 {
                                     floor.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).Set(baseOffset);
-                                    elementIds.Add(floor.Id.IntegerValue);
+                                    elementIds.Add(floor.Id.GetIntValue());
                                 }
                                 break;
                             default:

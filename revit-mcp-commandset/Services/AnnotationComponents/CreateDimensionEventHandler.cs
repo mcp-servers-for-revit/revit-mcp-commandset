@@ -24,6 +24,7 @@
 using Autodesk.Revit.UI;
 using RevitMCPCommandSet.Models.Annotation;
 using RevitMCPCommandSet.Models.Common;
+using RevitMCPCommandSet.Utils;
 using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.AnnotationComponents;
@@ -187,7 +188,7 @@ public class CreateDimensionEventHandler : IExternalEventHandler, IWaitableExter
                             // Apply additional parameters
                             ApplyDimensionParameters(dimension, dimInfo);
 
-                            createdDimensionIds.Add((int)dimension.Id.Value);
+                            createdDimensionIds.Add(dimension.Id.GetIntValue());
                         }
 
                         transaction.Commit();

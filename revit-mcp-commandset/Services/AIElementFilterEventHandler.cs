@@ -386,7 +386,7 @@ namespace RevitMCPCommandSet.Services
 
                 ElementInstanceInfo elementInfo = new ElementInstanceInfo();        //创建存储元素完整信息的自定义类
                 // ID
-                elementInfo.Id = (int)element.Id.Value;
+                elementInfo.Id = element.Id.GetIntValue();
                 // UniqueId
                 elementInfo.UniqueId = element.UniqueId;
                 // 类型名称
@@ -396,12 +396,12 @@ namespace RevitMCPCommandSet.Services
                 // 类别
                 elementInfo.Category = element.Category.Name;
                 // 内置类别
-                elementInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value);
+                elementInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue());
                 // 类型Id
-                elementInfo.TypeId = (int)element.GetTypeId().Value;
+                elementInfo.TypeId = element.GetTypeId().GetIntValue();
                 //所属房间Id  
                 if (element is FamilyInstance instance)
-                    elementInfo.RoomId = (int)(instance.Room?.Id.Value ?? -1);
+                    elementInfo.RoomId = instance.Room?.Id.GetIntValue() ?? -1;
                 // 标高
                 elementInfo.Level = GetElementLevel(doc, element);
                 // 最大包围盒
@@ -438,7 +438,7 @@ namespace RevitMCPCommandSet.Services
         {
             ElementTypeInfo typeInfo = new ElementTypeInfo();
             // Id
-            typeInfo.Id = (int)elementType.Id.Value;
+            typeInfo.Id = elementType.Id.GetIntValue();
             // UniqueId
             typeInfo.UniqueId = elementType.UniqueId;
             // 类型名称
@@ -448,7 +448,7 @@ namespace RevitMCPCommandSet.Services
             // 类别
             typeInfo.Category = elementType.Category.Name;
             // 内置类别
-            typeInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), (int)elementType.Category.Id.Value);
+            typeInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), elementType.Category.Id.GetIntValue());
             // 参数字典
             typeInfo.Parameters = GetDimensionParameters(elementType);
             ParameterInfo thicknessParam = GetThicknessInfo(elementType);      //厚度参数
@@ -470,13 +470,13 @@ namespace RevitMCPCommandSet.Services
                     return null;
                 PositioningElementInfo info = new PositioningElementInfo
                 {
-                    Id = (int)element.Id.Value,
+                    Id = element.Id.GetIntValue(),
                     UniqueId = element.UniqueId,
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
                     BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value) : null,
+                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue()) : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -525,13 +525,13 @@ namespace RevitMCPCommandSet.Services
                 SpatialElement spatialElement = element as SpatialElement;
                 SpatialElementInfo info = new SpatialElementInfo
                 {
-                    Id = (int)element.Id.Value,
+                    Id = element.Id.GetIntValue(),
                     UniqueId = element.UniqueId,
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
                     BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value) : null,
+                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue()) : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -588,13 +588,13 @@ namespace RevitMCPCommandSet.Services
 
                 ViewInfo info = new ViewInfo
                 {
-                    Id = (int)element.Id.Value,
+                    Id = element.Id.GetIntValue(),
                     UniqueId = element.UniqueId,
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
                     BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value) : null,
+                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue()) : null,
                     ElementClass = element.GetType().Name,
                     ViewType = view.ViewType.ToString(),
                     Scale = view.Scale,
@@ -609,7 +609,7 @@ namespace RevitMCPCommandSet.Services
                     Level level = viewPlan.GenLevel;
                     info.AssociatedLevel = new LevelInfo
                     {
-                        Id = (int)level.Id.Value,
+                        Id = level.Id.GetIntValue(),
                         Name = level.Name,
                         Height = level.Elevation * 304.8 // 转换为mm
                     };
@@ -624,12 +624,12 @@ namespace RevitMCPCommandSet.Services
                 foreach (UIView uiView in openViews)
                 {
                     // 检查视图是否打开
-                    if (uiView.ViewId.Value == view.Id.Value)
+                    if (uiView.ViewId.GetValue() == view.Id.GetValue())
                     {
                         info.IsOpen = true;
 
                         // 检查视图是否是当前激活的视图
-                        if (uidoc.ActiveView.Id.Value == view.Id.Value)
+                        if (uidoc.ActiveView.Id.GetValue() == view.Id.GetValue())
                         {
                             info.IsActive = true;
                         }
@@ -656,13 +656,13 @@ namespace RevitMCPCommandSet.Services
                     return null;
                 AnnotationInfo info = new AnnotationInfo
                 {
-                    Id = (int)element.Id.Value,
+                    Id = element.Id.GetIntValue(),
                     UniqueId = element.UniqueId,
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
                     BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value) : null,
+                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue()) : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -733,13 +733,13 @@ namespace RevitMCPCommandSet.Services
                     return null;
                 GroupOrLinkInfo info = new GroupOrLinkInfo
                 {
-                    Id = (int)element.Id.Value,
+                    Id = element.Id.GetIntValue(),
                     UniqueId = element.UniqueId,
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
                     BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value) : null,
+                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue()) : null,
                     ElementClass = element.GetType().Name,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
@@ -804,13 +804,13 @@ namespace RevitMCPCommandSet.Services
                     return null;
                 ElementBasicInfo basicInfo = new ElementBasicInfo
                 {
-                    Id = (int)element.Id.Value,
+                    Id = element.Id.GetIntValue(),
                     UniqueId = element.UniqueId,
                     Name = element.Name,
                     FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString(),
                     Category = element.Category?.Name,
                     BuiltInCategory = element.Category != null ?
-                        Enum.GetName(typeof(BuiltInCategory), (int)element.Category.Id.Value) : null,
+                        Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue()) : null,
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
                 return basicInfo;
@@ -854,7 +854,7 @@ namespace RevitMCPCommandSet.Services
             }
             else if (elementType is FamilySymbol familySymbol)
             {
-                switch ((int?)familySymbol.Category?.Id.Value)
+                switch (familySymbol.Category?.Id.GetIntValue())
                 {
                     case (int)BuiltInCategory.OST_Doors:
                     case (int)BuiltInCategory.OST_Windows:
@@ -932,7 +932,7 @@ namespace RevitMCPCommandSet.Services
                 {
                     LevelInfo levelInfo = new LevelInfo
                     {
-                        Id = (int)level.Id.Value,
+                        Id = level.Id.GetIntValue(),
                         Name = level.Name,
                         Height = level.Elevation * 304.8
                     };

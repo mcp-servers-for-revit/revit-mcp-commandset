@@ -277,8 +277,8 @@ namespace RevitMCPCommandSet.Services
                     return element?.Name ?? id.IntegerValue.ToString();
 #endif
                 case StorageType.Integer:
-#if REVIT2022_OR_GREATER
-                    // For Revit 2022+ we should use ForgeTypeId approach
+#if REVIT2023_OR_GREATER
+                    // For Revit 2023+ we should use ForgeTypeId approach
                     if (parameter.Definition is InternalDefinition internalDef)
                     {
                         try

@@ -70,7 +70,7 @@ namespace RevitMCPCommandSet.Services
                             {
                                 symbol = typeEle as FamilySymbol;
                                 // 获取symbol的Category对象并转换为BuiltInCategory枚举
-                                builtInCategory = (BuiltInCategory)(int)symbol.Category.Id.Value;
+                                builtInCategory = (BuiltInCategory)symbol.Category.Id.GetIntValue();
                             }
                         }
                     }
@@ -116,7 +116,7 @@ namespace RevitMCPCommandSet.Services
                                 doc.Regenerate();
                             }
 
-                            elementIds.Add((int)instance.Id.Value);
+                            elementIds.Add(instance.Id.GetIntValue());
                         }
                         //doc.Refresh();
                         transaction.Commit();
