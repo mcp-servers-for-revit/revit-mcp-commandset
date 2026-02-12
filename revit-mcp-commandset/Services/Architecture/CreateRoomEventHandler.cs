@@ -3,6 +3,7 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using RevitMCPCommandSet.Models.Architecture;
 using RevitMCPCommandSet.Models.Common;
+using RevitMCPCommandSet.Utils;
 using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.Architecture
@@ -174,17 +175,9 @@ namespace RevitMCPCommandSet.Services.Architecture
                         // Set room number (ensuring uniqueness)
                         // IMPORTANT: Generate unique number BEFORE relying on Revit's auto-assigned number
                         // to prevent any duplicate number warnings
-                        string roomNumber = roomInfo.Number;
-                        if (!string.IsNullOrEmpty(roomNumber))
-                        {
-                            // User provided a number - make it unique if it already exists
-                            roomNumber = GetUniqueRoomNumber(roomNumber, existingRoomNumbers);
-                        }
-                        else
-                        {
-                            // No number provided - generate next available number (don't use room.Number)
-                            roomNumber = GetNextAvailableRoomNumber(existingRoomNumbers);
-                        }
+                        string roomNumber = !string.IsNullOrEmpty(roomInfo.Number)
+                            ? GetUniqueRoomNumber(roomInfo.Number, existingRoomNumbers)
+                            : GetNextAvailableRoomNumber(existingRoomNumbers);
 
                         Parameter numberParam = room.get_Parameter(BuiltInParameter.ROOM_NUMBER);
                         if (numberParam != null && !numberParam.IsReadOnly)
@@ -249,11 +242,7 @@ namespace RevitMCPCommandSet.Services.Architecture
                         // Add to result list
                         createdRooms.Add(new RoomResultInfo
                         {
-#if REVIT2024_OR_GREATER
-                            Id = (int)room.Id.Value,
-#else
-                            Id = room.Id.IntegerValue,
-#endif
+                            Id = room.Id.GetIntValue(),
                             UniqueId = room.UniqueId,
                             Name = roomInfo.Name ?? "Room",
                             Number = roomNumber, // Use the actual assigned number (may differ from requested if made unique)
@@ -332,17 +321,22 @@ namespace RevitMCPCommandSet.Services.Architecture
                 else
                 {
                     // Try to extract trailing digits (e.g., "Room 101" -> 101)
-                    string digits = "";
+                    int digitStart = -1;
+                    int digitEnd = -1;
                     for (int i = num.Length - 1; i >= 0; i--)
                     {
                         if (char.IsDigit(num[i]))
-                            digits = num[i] + digits;
-                        else if (digits.Length > 0)
+                        {
+                            if (digitEnd == -1) digitEnd = i;
+                            digitStart = i;
+                        }
+                        else if (digitEnd != -1)
                             break;
                     }
-                    if (digits.Length > 0 && int.TryParse(digits, out int trailingNum))
+                    string digits = digitStart >= 0 ? num.Substring(digitStart, digitEnd - digitStart + 1) : "";
+                    if (digits.Length > 0 && int.TryParse(digits, out int trailingNum) && trailingNum > maxNumber)
                     {
-                        if (trailingNum > maxNumber) maxNumber = trailingNum;
+                        maxNumber = trailingNum;
                     }
                 }
             }
