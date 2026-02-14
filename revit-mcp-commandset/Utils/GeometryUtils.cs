@@ -203,8 +203,10 @@ public static class GeometryUtils
     {
         // Implement algorithm to calculate intersection
         // Simple method: use Revit API to find intersection
+#pragma warning disable CS0618 // Maintain backwards compatibility with pre-2026 Revit API
         var results = new IntersectionResultArray();
         if (line1.Intersect(line2, out results) == SetComparisonResult.Overlap && results.Size > 0)
+#pragma warning restore CS0618
             return results.get_Item(0).XYZPoint;
         return null;
     }
