@@ -5,7 +5,11 @@ using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.DataExtraction
 {
-    public class AnalyzeModelStatisticsEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    /// <summary>
+    /// Business logic for analyzing model statistics.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
+    /// </summary>
+    public class AnalyzeModelStatisticsHandler
     {
         private bool _includeDetailedTypes;
 
@@ -25,12 +29,10 @@ namespace RevitMCPCommandSet.Services.DataExtraction
             return _resetEvent.WaitOne(timeoutMilliseconds);
         }
 
-        public void Execute(UIApplication app)
+        public void RunOnDocument(Document doc)
         {
             try
             {
-                var doc = app.ActiveUIDocument.Document;
-
                 // Get project name
                 string projectName = doc.Title;
 
@@ -168,6 +170,17 @@ namespace RevitMCPCommandSet.Services.DataExtraction
                 TaskCompleted = true;
                 _resetEvent.Set();
             }
+        }
+    }
+
+    /// <summary>
+    /// Event handler for analyzing model statistics in Revit
+    /// </summary>
+    public class AnalyzeModelStatisticsEventHandler : AnalyzeModelStatisticsHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public void Execute(UIApplication app)
+        {
+            RunOnDocument(app.ActiveUIDocument.Document);
         }
 
         public string GetName()

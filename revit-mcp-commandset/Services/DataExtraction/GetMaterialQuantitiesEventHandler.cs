@@ -5,10 +5,15 @@ using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.DataExtraction
 {
-    public class GetMaterialQuantitiesEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    /// <summary>
+    /// Business logic for calculating material quantities.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
+    /// </summary>
+    public class GetMaterialQuantitiesHandler
     {
         private List<string> _categoryFilters;
         private bool _selectedElementsOnly;
+        protected ICollection<ElementId> _selectedElementIds;
 
         public GetMaterialQuantitiesResult ResultInfo { get; private set; }
         public bool TaskCompleted { get; private set; }
@@ -27,22 +32,18 @@ namespace RevitMCPCommandSet.Services.DataExtraction
             return _resetEvent.WaitOne(timeoutMilliseconds);
         }
 
-        public void Execute(UIApplication app)
+        public void RunOnDocument(Document doc)
         {
             try
             {
-                var uiDoc = app.ActiveUIDocument;
-                var doc = uiDoc.Document;
-
                 // Dictionary to accumulate material quantities
                 var materialData = new Dictionary<ElementId, MaterialQuantityModel>();
 
                 // Get elements to analyze
                 ICollection<Element> elements;
-                if (_selectedElementsOnly)
+                if (_selectedElementsOnly && _selectedElementIds != null && _selectedElementIds.Count > 0)
                 {
-                    var selectedIds = uiDoc.Selection.GetElementIds();
-                    elements = selectedIds.Select(id => doc.GetElement(id)).Where(e => e != null).ToList();
+                    elements = _selectedElementIds.Select(id => doc.GetElement(id)).Where(e => e != null).ToList();
                 }
                 else
                 {
@@ -144,6 +145,19 @@ namespace RevitMCPCommandSet.Services.DataExtraction
                 TaskCompleted = true;
                 _resetEvent.Set();
             }
+        }
+    }
+
+    /// <summary>
+    /// Event handler for calculating material quantities in Revit
+    /// </summary>
+    public class GetMaterialQuantitiesEventHandler : GetMaterialQuantitiesHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public void Execute(UIApplication app)
+        {
+            var uiDoc = app.ActiveUIDocument;
+            _selectedElementIds = uiDoc.Selection.GetElementIds();
+            RunOnDocument(uiDoc.Document);
         }
 
         public string GetName()

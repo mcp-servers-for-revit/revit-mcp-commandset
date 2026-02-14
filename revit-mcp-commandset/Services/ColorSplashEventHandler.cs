@@ -1,15 +1,17 @@
-﻿using Autodesk.Revit.UI;
+using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 using RevitMCPCommandSet.Utils;
 using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services
 {
-    public class ColorSplashEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    /// <summary>
+    /// Business logic for color splash operations in Revit.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
+    /// </summary>
+    public class ColorSplashHandler
     {
-        private UIApplication uiApp;
-        private UIDocument uiDoc => uiApp.ActiveUIDocument;
-        private Document doc => uiDoc.Document;
+        private Document doc;
 
         /// <summary>
         /// Event wait object
@@ -39,14 +41,13 @@ namespace RevitMCPCommandSet.Services
             _resetEvent.Reset();
         }
 
-        public void Execute(UIApplication uiapp)
+        public void RunOnDocument(Document document, View overrideView = null)
         {
-            uiApp = uiapp;
-
+            doc = document;
             try
             {
                 // Get active view
-                View activeView = doc.ActiveView;
+                View activeView = overrideView ?? doc.ActiveView;
                 if (!activeView.CanUseTemporaryVisibilityModes())
                 {
                     ColoringResults = new
@@ -234,14 +235,6 @@ namespace RevitMCPCommandSet.Services
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             return _resetEvent.WaitOne(timeoutMilliseconds);
-        }
-
-        /// <summary>
-        /// IExternalEventHandler.GetName implementation
-        /// </summary>
-        public string GetName()
-        {
-            return "Color Splash";
         }
 
         /// <summary>
@@ -450,6 +443,25 @@ namespace RevitMCPCommandSet.Services
             }
 
             return ElementId.InvalidElementId;
+        }
+    }
+
+    /// <summary>
+    /// Event handler for color splash operations in Revit
+    /// </summary>
+    public class ColorSplashEventHandler : ColorSplashHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public void Execute(UIApplication uiapp)
+        {
+            RunOnDocument(uiapp.ActiveUIDocument.Document);
+        }
+
+        /// <summary>
+        /// IExternalEventHandler.GetName implementation
+        /// </summary>
+        public string GetName()
+        {
+            return "Color Splash";
         }
     }
 }

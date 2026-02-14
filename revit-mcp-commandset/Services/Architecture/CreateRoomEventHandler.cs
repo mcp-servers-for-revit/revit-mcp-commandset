@@ -38,13 +38,12 @@ namespace RevitMCPCommandSet.Services.Architecture
     }
 
     /// <summary>
-    /// Event handler for creating rooms in Revit
+    /// Business logic for creating rooms in Revit.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
     /// </summary>
-    public class CreateRoomEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    public class CreateRoomHandler
     {
-        private UIApplication _uiApp;
-        private UIDocument _uiDoc => _uiApp.ActiveUIDocument;
-        private Document _doc => _uiDoc.Document;
+        private Document _doc;
 
         /// <summary>
         /// Event wait object for synchronization
@@ -70,10 +69,9 @@ namespace RevitMCPCommandSet.Services.Architecture
             _resetEvent.Reset();
         }
 
-        public void Execute(UIApplication uiapp)
+        public void RunOnDocument(Document doc)
         {
-            _uiApp = uiapp;
-
+            _doc = doc;
             try
             {
                 var createdRooms = new List<RoomResultInfo>();
@@ -268,7 +266,6 @@ namespace RevitMCPCommandSet.Services.Architecture
                     Success = false,
                     Message = $"Error creating rooms: {ex.Message}",
                 };
-                TaskDialog.Show("Error", $"Error creating rooms: {ex.Message}");
             }
             finally
             {
@@ -449,6 +446,17 @@ namespace RevitMCPCommandSet.Services.Architecture
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             return _resetEvent.WaitOne(timeoutMilliseconds);
+        }
+    }
+
+    /// <summary>
+    /// Event handler for creating rooms in Revit
+    /// </summary>
+    public class CreateRoomEventHandler : CreateRoomHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public void Execute(UIApplication uiapp)
+        {
+            RunOnDocument(uiapp.ActiveUIDocument.Document);
         }
 
         /// <summary>

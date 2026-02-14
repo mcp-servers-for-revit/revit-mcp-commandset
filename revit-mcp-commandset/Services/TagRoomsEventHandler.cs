@@ -34,13 +34,12 @@ namespace RevitMCPCommandSet.Services
     }
 
     /// <summary>
-    /// Event handler for creating room tags in Revit
+    /// Business logic for creating room tags in Revit.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
     /// </summary>
-    public class TagRoomsEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    public class TagRoomsHandler
     {
-        private UIApplication _uiApp;
-        private UIDocument _uiDoc => _uiApp.ActiveUIDocument;
-        private Document _doc => _uiDoc.Document;
+        private Document _doc;
 
         /// <summary>
         /// Event wait object for synchronization
@@ -67,14 +66,19 @@ namespace RevitMCPCommandSet.Services
             _resetEvent.Reset();
         }
 
-        public void Execute(UIApplication uiapp)
+        /// <summary>
+        /// Called when a view switch is needed. Override in derived classes to set UIDocument.ActiveView.
+        /// </summary>
+        protected virtual void SetActiveView(View view) { }
+
+        public void RunOnDocument(Document doc, View overrideView = null)
         {
-            _uiApp = uiapp;
+            _doc = doc;
             string viewSwitchMessage = null;
 
             try
             {
-                View activeView = _doc.ActiveView;
+                View activeView = overrideView ?? _doc.ActiveView;
 
                 // First, determine the target level from the rooms we need to tag
                 Level targetLevel = null;
@@ -130,7 +134,7 @@ namespace RevitMCPCommandSet.Services
                         if (floorPlanView != null)
                         {
                             string previousViewName = activeView.Name;
-                            _uiDoc.ActiveView = floorPlanView;
+                            SetActiveView(floorPlanView);
                             activeView = floorPlanView;
                             viewSwitchMessage = $"Switched from '{previousViewName}' to '{floorPlanView.Name}' for room tagging";
                         }
@@ -334,7 +338,6 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error", $"Error tagging rooms: {ex.Message}");
                 TaggingResults = new
                 {
                     success = false,
@@ -355,14 +358,6 @@ namespace RevitMCPCommandSet.Services
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             return _resetEvent.WaitOne(timeoutMilliseconds);
-        }
-
-        /// <summary>
-        /// IExternalEventHandler.GetName implementation
-        /// </summary>
-        public string GetName()
-        {
-            return "Tag Rooms";
         }
 
         /// <summary>
@@ -394,6 +389,34 @@ namespace RevitMCPCommandSet.Services
                                                   .FirstOrDefault();
 
             return roomTagType;
+        }
+    }
+
+    /// <summary>
+    /// Event handler for creating room tags in Revit
+    /// </summary>
+    public class TagRoomsEventHandler : TagRoomsHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        private UIDocument _uiDoc;
+
+        public void Execute(UIApplication uiapp)
+        {
+            _uiDoc = uiapp.ActiveUIDocument;
+            RunOnDocument(_uiDoc.Document);
+        }
+
+        protected override void SetActiveView(View view)
+        {
+            if (_uiDoc != null)
+                _uiDoc.ActiveView = view;
+        }
+
+        /// <summary>
+        /// IExternalEventHandler.GetName implementation
+        /// </summary>
+        public string GetName()
+        {
+            return "Tag Rooms";
         }
     }
 }

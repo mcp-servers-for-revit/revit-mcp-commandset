@@ -6,7 +6,11 @@ using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.DataExtraction
 {
-    public class ExportRoomDataEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    /// <summary>
+    /// Business logic for exporting room data.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
+    /// </summary>
+    public class ExportRoomDataHandler
     {
         private bool _includeUnplacedRooms;
         private bool _includeNotEnclosedRooms;
@@ -28,11 +32,10 @@ namespace RevitMCPCommandSet.Services.DataExtraction
             return _resetEvent.WaitOne(timeoutMilliseconds);
         }
 
-        public void Execute(UIApplication app)
+        public void RunOnDocument(Document doc)
         {
             try
             {
-                var doc = app.ActiveUIDocument.Document;
                 var rooms = new List<RoomDataModel>();
                 double totalArea = 0;
 
@@ -99,6 +102,17 @@ namespace RevitMCPCommandSet.Services.DataExtraction
                 TaskCompleted = true;
                 _resetEvent.Set();
             }
+        }
+    }
+
+    /// <summary>
+    /// Event handler for exporting room data in Revit
+    /// </summary>
+    public class ExportRoomDataEventHandler : ExportRoomDataHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public void Execute(UIApplication app)
+        {
+            RunOnDocument(app.ActiveUIDocument.Document);
         }
 
         public string GetName()

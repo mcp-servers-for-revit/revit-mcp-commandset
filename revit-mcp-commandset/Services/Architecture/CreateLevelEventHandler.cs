@@ -8,13 +8,12 @@ using LevelCreationInfo = RevitMCPCommandSet.Models.Architecture.LevelInfo;
 namespace RevitMCPCommandSet.Services.Architecture
 {
     /// <summary>
-    /// Event handler for creating levels in Revit
+    /// Business logic for creating levels in Revit.
+    /// This class has no RevitAPIUI dependencies and can be used directly in tests.
     /// </summary>
-    public class CreateLevelEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    public class CreateLevelHandler
     {
-        private UIApplication _uiApp;
-        private UIDocument _uiDoc => _uiApp.ActiveUIDocument;
-        private Document _doc => _uiDoc.Document;
+        private Document _doc;
 
         /// <summary>
         /// Event wait object for synchronization
@@ -40,10 +39,9 @@ namespace RevitMCPCommandSet.Services.Architecture
             _resetEvent.Reset();
         }
 
-        public void Execute(UIApplication uiapp)
+        public void RunOnDocument(Document doc)
         {
-            _uiApp = uiapp;
-
+            _doc = doc;
             try
             {
                 var createdLevels = new List<LevelResultInfo>();
@@ -240,6 +238,17 @@ namespace RevitMCPCommandSet.Services.Architecture
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             return _resetEvent.WaitOne(timeoutMilliseconds);
+        }
+    }
+
+    /// <summary>
+    /// Event handler for creating levels in Revit
+    /// </summary>
+    public class CreateLevelEventHandler : CreateLevelHandler, IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public void Execute(UIApplication uiapp)
+        {
+            RunOnDocument(uiapp.ActiveUIDocument.Document);
         }
 
         /// <summary>
