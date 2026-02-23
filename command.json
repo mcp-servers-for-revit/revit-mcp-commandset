@@ -38,41 +38,74 @@
       "description": "Deletes elements using ElementId",
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
-	{
+    {
       "commandName": "tag_all_walls",
       "description": "Tag all the walls in the model",
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
-	{
+    {
       "commandName": "create_line_based_element",
       "description": "Create line based element such as wall",
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
-	{
+    {
       "commandName": "export_room_data",
       "description": "Extract all rooms with detailed properties including area, volume, perimeter, and parameters",
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
-	{
+    {
       "commandName": "get_material_quantities",
       "description": "Calculate material quantities and takeoffs with area and volume calculations per material",
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
-	{
+    {
       "commandName": "analyze_model_statistics",
       "description": "Analyze model complexity with element counts by category, type, family, and level",
       "assemblyPath": "RevitMCPCommandSet.dll"
-    }
-,
-	{
+    },
+    {
       "commandName": "create_grid",
       "description": "Create grid system with smart spacing generation for project layout (alphabetic/numeric naming)",
       "assemblyPath": "RevitMCPCommandSet.dll"
-    }
-,
-	{
+    },
+    {
       "commandName": "create_structural_framing_system",
       "description": "Create structural beam framing system with configurable spacing and direction",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "send_code_to_revit",
+      "description": "Send C# code to Revit for dynamic execution",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "operate_element",
+      "description": "Operate on elements with actions like select, delete, hide, color, isolate",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "color_splash",
+      "description": "Apply color overrides to elements in the active view",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "ai_element_filter",
+      "description": "Filter elements using AI-powered natural language queries",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "create_point_based_element",
+      "description": "Create point-based elements like doors, windows, and furniture",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "create_surface_based_element",
+      "description": "Create surface-based elements like floors, ceilings, and roofs",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "create_dimension",
+      "description": "Create dimension annotations between references",
       "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
