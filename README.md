@@ -1,4 +1,15 @@
-# revit-mcp-commandset
+# revit-mcp-commandset 🔴
+
+> [!WARNING]
+> Deprecation notice, this repo is being archived in favour of the mono repo approch for the mcp https://github.com/mcp-servers-for-revit/mcp-servers-for-revit
+> Simpler CI, less confusion for noobs, npm package and simpler install
+
+
+---
+---
+
+
+
 🔄 Revit-MCP Client | Core implementation of the Revit-MCP protocol that connects LLMs with Revit. Includes essential CRUD commands for Revit elements enabling AI-driven BIM automation.
 
 # Custom Commands Setup
