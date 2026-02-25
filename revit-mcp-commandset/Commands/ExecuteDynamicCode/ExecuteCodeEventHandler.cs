@@ -1,4 +1,4 @@
-﻿using System.CodeDom.Compiler;
+using System.CodeDom.Compiler;
 using Autodesk.Revit.UI;
 using Microsoft.CSharp;
 using Newtonsoft.Json;
@@ -92,9 +92,10 @@ namespace RevitMCPCommandSet.Commands.ExecuteDynamicCode
             // 包装代码以规范入口点
             var wrappedCode = $@"
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using System.Collections.Generic;
 
 namespace AIGeneratedCode
 {{
@@ -102,7 +103,10 @@ namespace AIGeneratedCode
     {{
         public static object Execute(Document document, object[] parameters)
         {{
-            // 用户代码入口
+            // Convenience aliases matching common Revit API patterns
+            var Document = document;
+            var Doc = document;
+            var doc = document;
             {code}
         }}
     }}
